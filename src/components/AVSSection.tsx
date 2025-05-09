@@ -1,0 +1,228 @@
+import { useState, useEffect } from "react";
+import useReportStore from "../store";
+import { Day } from "../types";
+import { motion, AnimatePresence } from "framer-motion";
+import Modal from "./Modal";
+import PersonSelect from "./PersonSelect";
+import Card, { Chip, Button } from "./ui/Card";
+import { formatCurrency } from "../utils/format";
+import { calculateGrossMargin } from "../utils/grossMargin";
+import GoalProgress from "./GoalProgress";
+import { CurrencyDollarIcon } from "@heroicons/react/24/outline";
+import type { AVSAssignment } from "../store";
+import ServiceSelect from "./ServiceSelect";
+
+interface AVSSectionProps {
+  day: Day;
+}
+
+export default function AVSSection({ day }: AVSSectionProps) {
+  const avsAssignments = useReportStore((state) => state.avsAssignments);
+  const setAVSAssignment = useReportStore((state) => state.setAVSAssignment);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    person: "",
+    serviceId: "",
+    sold: 1,
+    priceOverride: '',
+  });
+
+  const [servicesData, setServicesData] = useState<any[]>([]);
+  const [peopleData, setPeopleData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [peopleLoading, setPeopleLoading] = useState(true);
+  const [peopleError, setPeopleError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const res = await fetch('/services.json');
+        if (!res.ok) throw new Error('Failed to fetch services');
+        setServicesData(await res.json());
+        setLoading(false);
+      } catch (e) {
+        setError('Kunne ikke laste services fra public/.');
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    async function fetchPeople() {
+      try {
+        const res = await fetch('/people.json');
+        if (!res.ok) throw new Error('Failed to fetch people');
+        setPeopleData(await res.json());
+        setPeopleLoading(false);
+      } catch (e) {
+        setPeopleError('Kunne ikke laste people fra public/.');
+        setPeopleLoading(false);
+      }
+    }
+    fetchPeople();
+  }, []);
+
+  if (loading || peopleLoading) return <div>Loading services/people...</div>;
+  if (error) return <div>{error}</div>;
+  if (peopleError) return <div>{peopleError}</div>;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const service = servicesData.find((s) => s.id === formData.serviceId);
+    if (service) {
+      const price = formData.priceOverride ? parseFloat(formData.priceOverride) : service.price;
+      const { gm } = calculateGrossMargin(service.cost, price);
+
+      setAVSAssignment({
+        day,
+        person: formData.person,
+        serviceId: formData.serviceId,
+        sold: formData.sold,
+        price,
+        gm,
+      });
+      setIsModalOpen(false);
+      setFormData({ person: "", serviceId: "", sold: 1, priceOverride: '' });
+    }
+  };
+
+  const grouped = avsAssignments
+    .filter((a: AVSAssignment) => a.day === day)
+    .reduce<Record<string, { serviceId: string; sold: number; price: number; gm: number }[]>>((acc, a) => {
+      if (!acc[a.person]) {
+        acc[a.person] = [];
+      }
+      acc[a.person].push({
+        serviceId: a.serviceId,
+        sold: a.sold,
+        price: a.price,
+        gm: a.gm,
+      });
+      return acc;
+    }, {});
+
+  return (
+    <Card
+      title="AVS"
+      color="blue"
+      icon={<CurrencyDollarIcon className="w-6 h-6" />}
+      description="Additional Value Services"
+      action={
+        <Button onClick={() => setIsModalOpen(true)} color="blue">
+          Add Service
+        </Button>
+      }
+    >
+      <div className="space-y-6">
+        <GoalProgress day={day} section="AVS" color="blue" />
+        
+        <div className="space-y-4">
+          <AnimatePresence>
+            {Object.keys(grouped).length === 0 && (
+              <motion.p
+                className="text-gray-400 dark:text-gray-500 text-center py-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                No services added for this day.
+              </motion.p>
+            )}
+            {Object.entries(grouped).map(([person, personServices]) => (
+              <motion.div
+                key={person}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">{person}</h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <AnimatePresence>
+                    {personServices.map((service, index) => {
+                      const serviceDetails = servicesData.find((s: any) => s.id === service.serviceId);
+                      return (
+                        <Chip key={index} color="blue">
+                          {serviceDetails?.name} ({formatCurrency(service.gm)})
+                        </Chip>
+                      );
+                    })}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Service">
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Person</label>
+            <div className="mt-1">
+              <PersonSelect
+                value={formData.person}
+                onChange={(value) => setFormData({ ...formData, person: value })}
+                label="Select person"
+                people={peopleData}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Service</label>
+            <ServiceSelect
+              value={formData.serviceId}
+              onChange={(serviceId) => setFormData({ ...formData, serviceId })}
+              label="Select a service"
+              services={servicesData}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Sold</label>
+            <input
+              type="number"
+              min="1"
+              value={formData.sold}
+              onChange={(e) => setFormData({ ...formData, sold: parseInt(e.target.value) })}
+              className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Price Override (optional)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={formData.priceOverride}
+              onChange={(e) => setFormData({ ...formData, priceOverride: e.target.value })}
+              className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm"
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3">
+            <Button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              color="blue"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button type="submit" color="blue">
+              Add Service
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </Card>
+  );
+}  
