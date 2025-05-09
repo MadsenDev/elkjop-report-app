@@ -26,9 +26,9 @@ export default function App() {
     // Simulate loading time for initial data fetch
     const loadInitialData = async () => {
       try {
-        // Add a minimum loading time to prevent flickering
+        // Add a longer loading time for testing
         await Promise.all([
-          new Promise(resolve => setTimeout(resolve, 1000)),
+          new Promise(resolve => setTimeout(resolve, 3000)), // 5 seconds
           // Add any actual data loading here
         ]);
       } finally {
@@ -37,6 +37,17 @@ export default function App() {
     };
 
     loadInitialData();
+
+    // Add keyboard shortcut to toggle loading screen (Ctrl/Cmd + L)
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+        e.preventDefault();
+        setIsLoading(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
   if (isLoading) {

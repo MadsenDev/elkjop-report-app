@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import useReportStore from "../store";
 import { Day } from "../types";
 import { motion, AnimatePresence } from "framer-motion";
-import Modal from "./Modal";
 import PersonSelect from "./PersonSelect";
 import Card, { Chip, Button } from "./ui/Card";
 import { formatCurrency } from "../utils/format";
@@ -11,22 +10,30 @@ import GoalProgress from "./GoalProgress";
 import { CurrencyDollarIcon } from "@heroicons/react/24/outline";
 import type { AVSAssignment } from "../store";
 import ServiceSelect from "./ServiceSelect";
+import SectionModal from './ui/SectionModal';
 
 interface AVSSectionProps {
   day: Day;
 }
 
+interface FormData {
+  person: string;
+  serviceId: string;
+  priceOverride: string;
+}
+
 export default function AVSSection({ day }: AVSSectionProps) {
   const avsAssignments = useReportStore((state) => state.avsAssignments);
   const setAVSAssignment = useReportStore((state) => state.setAVSAssignment);
+  const editAVSAssignment = useReportStore((state) => state.editAVSAssignment);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    person: "",
-    serviceId: "",
-    sold: 1,
-    priceOverride: '',
+  const [formData, setFormData] = useState<FormData>({
+    person: '',
+    serviceId: '',
+    priceOverride: ''
   });
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const [servicesData, setServicesData] = useState<any[]>([]);
   const [peopleData, setPeopleData] = useState<any[]>([]);
@@ -76,22 +83,55 @@ export default function AVSSection({ day }: AVSSectionProps) {
       const price = formData.priceOverride ? parseFloat(formData.priceOverride) : service.price;
       const { gm } = calculateGrossMargin(service.cost, price);
 
-      setAVSAssignment({
+      const newAssignment = {
         day,
         person: formData.person,
         serviceId: formData.serviceId,
-        sold: formData.sold,
+        sold: 1,
         price,
         gm,
-      });
+      };
+
+      if (editingIndex !== null) {
+        editAVSAssignment(editingIndex, newAssignment);
+      } else {
+        setAVSAssignment(newAssignment);
+      }
+
       setIsModalOpen(false);
-      setFormData({ person: "", serviceId: "", sold: 1, priceOverride: '' });
+      setEditingIndex(null);
+      setFormData({
+        person: '',
+        serviceId: '',
+        priceOverride: ''
+      });
     }
+  };
+
+  const handleEdit = (index: number) => {
+    const assignment = avsAssignments[index];
+    const service = servicesData.find(s => s.id === assignment.serviceId);
+    if (!service) return;
+
+    setFormData({
+      person: assignment.person,
+      serviceId: assignment.serviceId,
+      priceOverride: assignment.price !== service.price ? assignment.price.toString() : '',
+    });
+    setEditingIndex(index);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = (index: number) => {
+    const newAssignments = avsAssignments.filter((_, i) => i !== index);
+    useReportStore.setState({ avsAssignments: newAssignments });
+    setIsModalOpen(false);
+    setEditingIndex(null);
   };
 
   const grouped = avsAssignments
     .filter((a: AVSAssignment) => a.day === day)
-    .reduce<Record<string, { serviceId: string; sold: number; price: number; gm: number }[]>>((acc, a) => {
+    .reduce<Record<string, { serviceId: string; sold: number; price: number; gm: number; index: number }[]>>((acc, a, i) => {
       if (!acc[a.person]) {
         acc[a.person] = [];
       }
@@ -100,6 +140,7 @@ export default function AVSSection({ day }: AVSSectionProps) {
         sold: a.sold,
         price: a.price,
         gm: a.gm,
+        index: i,
       });
       return acc;
     }, {});
@@ -111,7 +152,15 @@ export default function AVSSection({ day }: AVSSectionProps) {
       icon={<CurrencyDollarIcon className="w-6 h-6" />}
       description="Additional Value Services"
       action={
-        <Button onClick={() => setIsModalOpen(true)} color="blue">
+        <Button onClick={() => {
+          setEditingIndex(null);
+          setFormData({
+            person: '',
+            serviceId: '',
+            priceOverride: ''
+          });
+          setIsModalOpen(true);
+        }} color="blue">
           Add Service
         </Button>
       }
@@ -145,11 +194,25 @@ export default function AVSSection({ day }: AVSSectionProps) {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <AnimatePresence>
-                    {personServices.map((service, index) => {
+                    {personServices.map((service) => {
                       const serviceDetails = servicesData.find((s: any) => s.id === service.serviceId);
                       return (
-                        <Chip key={index} color="blue">
-                          {serviceDetails?.name} ({formatCurrency(service.gm)})
+                        <Chip 
+                          key={service.serviceId} 
+                          color="blue"
+                          onClick={() => handleEdit(service.index)}
+                          className="cursor-pointer hover:opacity-80 transition-opacity"
+                        >
+                          <span>{serviceDetails?.name} ({formatCurrency(service.gm)})</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(service.index);
+                            }}
+                            className="ml-2 hover:text-red-500"
+                          >
+                            ×
+                          </button>
                         </Chip>
                       );
                     })}
@@ -161,68 +224,70 @@ export default function AVSSection({ day }: AVSSectionProps) {
         </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Service">
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Person</label>
-            <div className="mt-1">
-              <PersonSelect
-                value={formData.person}
-                onChange={(value) => setFormData({ ...formData, person: value })}
-                label="Select person"
-                people={peopleData}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Service</label>
-            <ServiceSelect
-              value={formData.serviceId}
-              onChange={(serviceId) => setFormData({ ...formData, serviceId })}
-              label="Select a service"
-              services={servicesData}
+      <SectionModal 
+        isOpen={isModalOpen} 
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingIndex(null);
+          setFormData({
+            person: '',
+            serviceId: '',
+            priceOverride: ''
+          });
+        }} 
+        title="Add Service"
+        color="blue"
+        onSubmit={handleSubmit}
+        submitText={editingIndex !== null ? "Save Changes" : "Add Service"}
+        isEditing={editingIndex !== null}
+      >
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Person</label>
+          <div className="mt-1">
+            <PersonSelect
+              value={formData.person}
+              onChange={(value) => setFormData({ ...formData, person: value })}
+              label="Select person"
+              people={peopleData}
             />
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Sold</label>
-            <input
-              type="number"
-              min="1"
-              value={formData.sold}
-              onChange={(e) => setFormData({ ...formData, sold: parseInt(e.target.value) })}
-              className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm"
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Service</label>
+          <ServiceSelect
+            value={formData.serviceId}
+            onChange={(serviceId) => setFormData({ ...formData, serviceId })}
+            label="Select a service"
+            services={servicesData}
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Price Override (optional)</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={formData.priceOverride}
-              onChange={(e) => setFormData({ ...formData, priceOverride: e.target.value })}
-              className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm"
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Price Override (optional)</label>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={formData.priceOverride}
+            onChange={(e) => setFormData({ ...formData, priceOverride: e.target.value })}
+            className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm"
+            placeholder="Leave empty to use default price"
+          />
+        </div>
 
-          <div className="flex justify-end space-x-3">
-            <Button
+        {editingIndex !== null && (
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
               type="button"
-              onClick={() => setIsModalOpen(false)}
-              color="blue"
-              variant="outline"
+              onClick={() => handleDelete(editingIndex)}
+              className="w-full px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
             >
-              Cancel
-            </Button>
-            <Button type="submit" color="blue">
-              Add Service
-            </Button>
+              Delete Service
+            </button>
           </div>
-        </form>
-      </Modal>
+        )}
+      </SectionModal>
     </Card>
   );
 }  

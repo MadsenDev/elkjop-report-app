@@ -6,9 +6,15 @@ import PersonSelect from './PersonSelect';
 import Card, { Chip, Button } from './ui/Card';
 import GoalProgress from './GoalProgress';
 import { FaShieldAlt } from 'react-icons/fa';
+import SectionModal from './ui/SectionModal';
 
 interface InsuranceAgreementSectionProps {
   day: Day;
+}
+
+interface FormData {
+  person: string;
+  sold: number;
 }
 
 export default function InsuranceAgreementSection({ day }: InsuranceAgreementSectionProps) {
@@ -18,10 +24,11 @@ export default function InsuranceAgreementSection({ day }: InsuranceAgreementSec
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   // Form state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     person: '',
-    sold: 1,
+    sold: 1
   });
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const [peopleData, setPeopleData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,13 +51,43 @@ export default function InsuranceAgreementSection({ day }: InsuranceAgreementSec
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setInsuranceAgreement({
+    const newAgreement = {
       day,
       person: formData.person,
       sold: formData.sold,
-    });
+    };
+
+    if (editingIndex !== null) {
+      // When editing, replace all existing agreements for this person with a single new one
+      const filteredAgreements = insuranceAgreements.filter(a => a.person !== formData.person || a.day !== day);
+      useReportStore.setState({ insuranceAgreements: [...filteredAgreements, newAgreement] });
+    } else {
+      setInsuranceAgreement(newAgreement);
+    }
+
     setIsModalOpen(false);
+    setEditingIndex(null);
     setFormData({ person: '', sold: 1 });
+  };
+
+  const handleEdit = (person: string, totalSold: number) => {
+    // Find the first agreement for this person to use as the base for editing
+    const firstAgreementIndex = insuranceAgreements.findIndex(a => a.person === person && a.day === day);
+    if (firstAgreementIndex === -1) return;
+
+    setFormData({
+      person,
+      sold: totalSold,
+    });
+    setEditingIndex(firstAgreementIndex);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = (person: string) => {
+    const newAgreements = insuranceAgreements.filter(a => a.person !== person || a.day !== day);
+    useReportStore.setState({ insuranceAgreements: newAgreements });
+    setIsModalOpen(false);
+    setEditingIndex(null);
   };
 
   const grouped = insuranceAgreements
@@ -70,7 +107,11 @@ export default function InsuranceAgreementSection({ day }: InsuranceAgreementSec
       icon={<FaShieldAlt />}
       description="Insurance Agreement Sales"
       action={
-        <Button onClick={() => setIsModalOpen(true)} color="green">
+        <Button onClick={() => {
+          setEditingIndex(null);
+          setFormData({ person: '', sold: 1 });
+          setIsModalOpen(true);
+        }} color="green">
           Add Sale
         </Button>
       }
@@ -103,8 +144,21 @@ export default function InsuranceAgreementSection({ day }: InsuranceAgreementSec
                   <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">{person}</h3>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Chip color="green">
-                    {sold} sold
+                  <Chip 
+                    color="green"
+                    onClick={() => handleEdit(person, sold)}
+                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                  >
+                    <span>{sold} sold</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(person);
+                      }}
+                      className="ml-2 hover:text-red-500"
+                    >
+                      ×
+                    </button>
                   </Chip>
                 </div>
               </motion.div>
@@ -113,59 +167,64 @@ export default function InsuranceAgreementSection({ day }: InsuranceAgreementSec
         </div>
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Add Insurance Agreement Sale</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Person
-                </label>
-                <div className="mt-1">
-                  <PersonSelect
-                    value={formData.person}
-                    onChange={(value) => setFormData({ ...formData, person: value })}
-                    label="Select person"
-                    people={peopleData}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Sold
-                </label>
-                <input
-                  type="number"
-                  value={formData.sold}
-                  onChange={(e) =>
-                    setFormData({ ...formData, sold: parseInt(e.target.value) })
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-green-500 focus:ring-green-500 dark:bg-gray-700 dark:text-white"
-                  min="1"
-                  required
-                />
-              </div>
-              <div className="flex justify-end space-x-3">
-                <Button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  color="green"
-                  variant="outline"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  color="green"
-                >
-                  Add
-                </Button>
-              </div>
-            </form>
+      <SectionModal 
+        isOpen={isModalOpen} 
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingIndex(null);
+          setFormData({ person: '', sold: 1 });
+        }} 
+        title="Add Insurance Agreement"
+        color="green"
+        onSubmit={handleSubmit}
+        submitText={editingIndex !== null ? "Save Changes" : "Add Sale"}
+        isEditing={editingIndex !== null}
+      >
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Person
+          </label>
+          <div className="mt-1">
+            <PersonSelect
+              value={formData.person}
+              onChange={(value) => setFormData({ ...formData, person: value })}
+              label="Select person"
+              people={peopleData}
+            />
           </div>
         </div>
-      )}
+
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Amount
+          </label>
+          <div className="mt-1">
+            <input
+              type="number"
+              min="1"
+              value={formData.sold}
+              onChange={(e) => setFormData({ ...formData, sold: parseInt(e.target.value) })}
+              className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:text-white sm:text-sm transition-colors"
+              required
+            />
+          </div>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Number of insurance agreements sold
+          </p>
+        </div>
+
+        {editingIndex !== null && (
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={() => handleDelete(formData.person)}
+              className="w-full px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              Delete Entry
+            </button>
+          </div>
+        )}
+      </SectionModal>
     </Card>
   );
 }  

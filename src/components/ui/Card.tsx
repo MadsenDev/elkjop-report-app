@@ -108,18 +108,28 @@ const Card = ({ title, children, color = 'blue', action, description, icon, clas
   );
 };
 
-export function Chip({ children, color = 'blue' }: { children: ReactNode; color?: 'blue' | 'green' | 'purple' | 'orange' }) {
-  const style = colorStyles[color];
+interface ChipProps {
+  children: React.ReactNode;
+  color?: 'blue' | 'green' | 'purple' | 'orange';
+  onClick?: () => void;
+  className?: string;
+}
+
+export function Chip({ children, color = 'blue', onClick, className = '' }: ChipProps) {
+  const colorClasses = {
+    blue: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+    green: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+    purple: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+    orange: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+  };
 
   return (
-    <motion.span
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ scale: 0.8, opacity: 0 }}
-      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${style.chip} shadow-sm`}
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClasses[color]} ${className}`}
+      onClick={onClick}
     >
       {children}
-    </motion.span>
+    </span>
   );
 }
 

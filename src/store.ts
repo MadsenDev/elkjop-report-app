@@ -53,14 +53,17 @@ export interface ReportState {
   setSelectedDay: (day: Day) => void;
   avsAssignments: AVSAssignment[];
   setAVSAssignment: (assignment: AVSAssignment) => void;
+  editAVSAssignment: (index: number, assignment: AVSAssignment) => void;
   services: Service[];
   insuranceAgreements: InsuranceAgreementSale[];
   setInsuranceAgreement: (sale: InsuranceAgreementSale) => void;
+  editInsuranceAgreement: (index: number, sale: InsuranceAgreementSale) => void;
   precalibratedTVs: PrecalibratedTVCompletion[];
   setPrecalibratedTV: (completion: PrecalibratedTVCompletion) => void;
+  editPrecalibratedTV: (index: number, completion: PrecalibratedTVCompletion) => void;
   repairTickets: RepairTicket[];
-  appendAVSAssignment: (assignment: AVSAssignment) => void;
   setRepairTicket: (ticket: RepairTicket) => void;
+  editRepairTicket: (index: number, ticket: RepairTicket) => void;
   qualityInspections: QualityInspection[];
   setQualityInspection: (day: Day, count: number) => void;
 }
@@ -74,21 +77,30 @@ const useReportStore = create<ReportState>()(
       setAVSAssignment: (assignment) => set((state) => ({
         avsAssignments: [...state.avsAssignments, assignment]
       })),
+      editAVSAssignment: (index, assignment) => set((state) => ({
+        avsAssignments: state.avsAssignments.map((a, i) => i === index ? assignment : a)
+      })),
       services: servicesData,
       insuranceAgreements: [],
       setInsuranceAgreement: (sale) => set((state) => ({
         insuranceAgreements: [...state.insuranceAgreements, sale]
       })),
+      editInsuranceAgreement: (index, sale) => set((state) => ({
+        insuranceAgreements: state.insuranceAgreements.map((s, i) => i === index ? sale : s)
+      })),
       precalibratedTVs: [],
       setPrecalibratedTV: (completion) => set((state) => ({
         precalibratedTVs: [...state.precalibratedTVs, completion]
       })),
-      repairTickets: [],
-      appendAVSAssignment: (assignment) => set((state) => ({
-        avsAssignments: [...state.avsAssignments, assignment]
+      editPrecalibratedTV: (index, completion) => set((state) => ({
+        precalibratedTVs: state.precalibratedTVs.map((p, i) => i === index ? completion : p)
       })),
+      repairTickets: [],
       setRepairTicket: (ticket) => set((state) => ({
         repairTickets: [...state.repairTickets, ticket]
+      })),
+      editRepairTicket: (index, ticket) => set((state) => ({
+        repairTickets: state.repairTickets.map((t, i) => i === index ? ticket : t)
       })),
       qualityInspections: [],
       setQualityInspection: (day, count) => set((state) => {
@@ -97,7 +109,7 @@ const useReportStore = create<ReportState>()(
       }),
     }),
     {
-      name: 'elkjop-report-store', // localStorage key
+      name: 'elkjop-report-store',
       partialize: (state) => ({
         selectedDay: state.selectedDay,
         avsAssignments: state.avsAssignments,

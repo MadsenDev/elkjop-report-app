@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import useReportStore from "../store";
 import { Day } from "../types";
 import { motion, AnimatePresence } from "framer-motion";
-import Modal from "./Modal";
 import PersonSelect from "./PersonSelect";
 import Card, { Chip, Button } from "./ui/Card";
 import GoalProgress from "./GoalProgress";
 import type { PrecalibratedTVCompletion } from "../store";
 import { FaTv } from "react-icons/fa";
+import SectionModal from './ui/SectionModal';
 
 interface PrecalibratedTVSectionProps {
   day: Day;
@@ -24,6 +24,7 @@ export default function PrecalibratedTVSection({ day }: PrecalibratedTVSectionPr
     person: '',
     completed: 1,
   });
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const [peopleData, setPeopleData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,17 +49,46 @@ export default function PrecalibratedTVSection({ day }: PrecalibratedTVSectionPr
     e.preventDefault();
     if (!formData.person) return;
 
-    setPrecalibratedTV({
+    const newCompletion = {
       day,
       person: formData.person,
       completed: formData.completed,
-    });
+    };
+
+    if (editingIndex !== null) {
+      // When editing, replace all existing completions for this person with a single new one
+      const filteredCompletions = precalibratedTVs.filter(c => c.person !== formData.person || c.day !== day);
+      useReportStore.setState({ precalibratedTVs: [...filteredCompletions, newCompletion] });
+    } else {
+      setPrecalibratedTV(newCompletion);
+    }
 
     setFormData({
       person: '',
       completed: 1,
     });
     setIsModalOpen(false);
+    setEditingIndex(null);
+  };
+
+  const handleEdit = (person: string, totalCompleted: number) => {
+    // Find the first completion for this person to use as the base for editing
+    const firstCompletionIndex = precalibratedTVs.findIndex(c => c.person === person && c.day === day);
+    if (firstCompletionIndex === -1) return;
+
+    setFormData({
+      person,
+      completed: totalCompleted,
+    });
+    setEditingIndex(firstCompletionIndex);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = (person: string) => {
+    const newCompletions = precalibratedTVs.filter(c => c.person !== person || c.day !== day);
+    useReportStore.setState({ precalibratedTVs: newCompletions });
+    setIsModalOpen(false);
+    setEditingIndex(null);
   };
 
   const grouped = precalibratedTVs
@@ -81,7 +111,11 @@ export default function PrecalibratedTVSection({ day }: PrecalibratedTVSectionPr
       icon={<FaTv />}
       description="TV Setup Completions"
       action={
-        <Button onClick={() => setIsModalOpen(true)} color="purple">
+        <Button onClick={() => {
+          setEditingIndex(null);
+          setFormData({ person: '', completed: 1 });
+          setIsModalOpen(true);
+        }} color="purple">
           Add Completion
         </Button>
       }
@@ -114,8 +148,21 @@ export default function PrecalibratedTVSection({ day }: PrecalibratedTVSectionPr
                   <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">{person}</h3>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Chip color="purple">
-                    {count} completed
+                  <Chip 
+                    color="purple"
+                    onClick={() => handleEdit(person, count)}
+                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                  >
+                    <span>{count} completed</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(person);
+                      }}
+                      className="ml-2 hover:text-red-500"
+                    >
+                      ×
+                    </button>
                   </Chip>
                 </div>
               </motion.div>
@@ -124,46 +171,64 @@ export default function PrecalibratedTVSection({ day }: PrecalibratedTVSectionPr
         </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Completion">
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Person</label>
-            <div className="mt-1">
-              <PersonSelect
-                value={formData.person}
-                onChange={(value) => setFormData({ ...formData, person: value })}
-                label="Select person"
-                people={peopleData}
-              />
-            </div>
+      <SectionModal 
+        isOpen={isModalOpen} 
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingIndex(null);
+          setFormData({ person: '', completed: 1 });
+        }} 
+        title="Add Completion"
+        color="purple"
+        onSubmit={handleSubmit}
+        submitText={editingIndex !== null ? "Save Changes" : "Add Completion"}
+        isEditing={editingIndex !== null}
+      >
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Person
+          </label>
+          <div className="mt-1">
+            <PersonSelect
+              value={formData.person}
+              onChange={(value) => setFormData({ ...formData, person: value })}
+              label="Select person"
+              people={peopleData}
+            />
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Completed</label>
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Completed
+          </label>
+          <div className="mt-1">
             <input
               type="number"
               min="0"
               value={formData.completed}
               onChange={(e) => setFormData({ ...formData, completed: parseInt(e.target.value) })}
-              className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white sm:text-sm transition-colors"
+              required
             />
           </div>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Number of TV setups completed
+          </p>
+        </div>
 
-          <div className="flex justify-end space-x-3">
-            <Button
+        {editingIndex !== null && (
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
               type="button"
-              onClick={() => setIsModalOpen(false)}
-              color="purple"
-              variant="outline"
+              onClick={() => handleDelete(formData.person)}
+              className="w-full px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
             >
-              Cancel
-            </Button>
-            <Button type="submit" color="purple">
-              Add Completion
-            </Button>
+              Delete Entry
+            </button>
           </div>
-        </form>
-      </Modal>
+        )}
+      </SectionModal>
     </Card>
   );
 }  
