@@ -8,6 +8,7 @@ import GoalProgress from "./GoalProgress";
 import type { PrecalibratedTVCompletion } from "../store";
 import { FaTv } from "react-icons/fa";
 import SectionModal from './ui/SectionModal';
+import NumberInput from './ui/NumberInput';
 
 interface PrecalibratedTVSectionProps {
   day: Day;
@@ -199,22 +200,14 @@ export default function PrecalibratedTVSection({ day }: PrecalibratedTVSectionPr
         </div>
 
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Completed
-          </label>
-          <div className="mt-1">
-            <input
-              type="number"
-              min="0"
-              value={formData.completed}
-              onChange={(e) => setFormData({ ...formData, completed: parseInt(e.target.value) })}
-              className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white sm:text-sm transition-colors"
-              required
-            />
-          </div>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Number of TV setups completed
-          </p>
+          <NumberInput
+            value={formData.completed}
+            onChange={(value) => setFormData({ ...formData, completed: value })}
+            min={0}
+            label="Completed"
+            helperText="Number of TV setups completed"
+            required
+          />
         </div>
 
         {editingIndex !== null && (

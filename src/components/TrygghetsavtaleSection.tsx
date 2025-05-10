@@ -7,6 +7,7 @@ import Card, { Chip, Button } from './ui/Card';
 import GoalProgress from './GoalProgress';
 import { FaShieldAlt } from 'react-icons/fa';
 import SectionModal from './ui/SectionModal';
+import NumberInput from './ui/NumberInput';
 
 interface InsuranceAgreementSectionProps {
   day: Day;
@@ -195,22 +196,14 @@ export default function InsuranceAgreementSection({ day }: InsuranceAgreementSec
         </div>
 
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Amount
-          </label>
-          <div className="mt-1">
-            <input
-              type="number"
-              min="1"
-              value={formData.sold}
-              onChange={(e) => setFormData({ ...formData, sold: parseInt(e.target.value) })}
-              className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:text-white sm:text-sm transition-colors"
-              required
-            />
-          </div>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Number of insurance agreements sold
-          </p>
+          <NumberInput
+            value={formData.sold}
+            onChange={(value) => setFormData({ ...formData, sold: value })}
+            min={1}
+            label="Amount"
+            helperText="Number of insurance agreements sold"
+            required
+          />
         </div>
 
         {editingIndex !== null && (

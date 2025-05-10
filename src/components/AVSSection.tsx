@@ -11,6 +11,7 @@ import { CurrencyDollarIcon } from "@heroicons/react/24/outline";
 import type { AVSAssignment } from "../store";
 import ServiceSelect from "./ServiceSelect";
 import SectionModal from './ui/SectionModal';
+import NumberInput from './ui/NumberInput';
 
 interface AVSSectionProps {
   day: Day;
@@ -270,14 +271,12 @@ export default function AVSSection({ day }: AVSSectionProps) {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Price Override (optional)</label>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={formData.priceOverride}
-            onChange={(e) => setFormData({ ...formData, priceOverride: e.target.value })}
-            className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm"
-            placeholder="Leave empty to use default price"
+          <NumberInput
+            value={formData.priceOverride ? parseFloat(formData.priceOverride) : 0}
+            onChange={(value) => setFormData({ ...formData, priceOverride: value.toString() })}
+            min={0}
+            step={0.01}
+            helperText="Leave empty to use default price"
           />
         </div>
 

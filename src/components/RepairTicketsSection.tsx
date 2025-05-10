@@ -9,6 +9,7 @@ import GoalProgress from "./GoalProgress";
 import { WrenchScrewdriverIcon } from "@heroicons/react/24/outline";
 import type { RepairTicket } from "../store";
 import SectionModal from "./ui/SectionModal";
+import NumberInput from "./ui/NumberInput";
 
 interface RepairTicketsSectionProps {
   day: Day;
@@ -196,22 +197,14 @@ export default function RepairTicketsSection({ day }: RepairTicketsSectionProps)
         </div>
 
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Created
-          </label>
-          <div className="mt-1">
-            <input
-              type="number"
-              min="0"
-              value={formData.created}
-              onChange={(e) => setFormData({ ...formData, created: parseInt(e.target.value) })}
-              className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white sm:text-sm transition-colors"
-              required
-            />
-          </div>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Number of repair tickets created
-          </p>
+          <NumberInput
+            value={formData.created}
+            onChange={(value) => setFormData({ ...formData, created: value })}
+            min={0}
+            label="Created"
+            helperText="Number of repair tickets created"
+            required
+          />
         </div>
 
         {editingIndex !== null && (
