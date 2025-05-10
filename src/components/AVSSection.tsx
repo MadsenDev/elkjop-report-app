@@ -135,12 +135,17 @@ export default function AVSSection({ day }: AVSSectionProps) {
       if (!acc[a.person]) {
         acc[a.person] = [];
       }
+      const actualIndex = avsAssignments.findIndex(assignment => 
+        assignment.day === a.day && 
+        assignment.person === a.person && 
+        assignment.serviceId === a.serviceId
+      );
       acc[a.person].push({
         serviceId: a.serviceId,
         sold: a.sold,
         price: a.price,
         gm: a.gm,
-        index: i,
+        index: actualIndex,
       });
       return acc;
     }, {});

@@ -105,7 +105,6 @@ export default function DayReportCard({ day }: DayReportCardProps) {
                 <tr>
                   <th className="text-left px-3 py-1 font-semibold text-blue-700 dark:text-blue-400">Person</th>
                   <th className="text-left px-3 py-1 font-semibold text-blue-700 dark:text-blue-400">Service</th>
-                  <th className="text-left px-3 py-1 font-semibold text-blue-700 dark:text-blue-400">Sold</th>
                   <th className="text-left px-3 py-1 font-semibold text-blue-700 dark:text-blue-400">GM</th>
                 </tr>
               </thead>
@@ -117,7 +116,6 @@ export default function DayReportCard({ day }: DayReportCardProps) {
                     <tr key={i} className="bg-white/50 dark:bg-gray-800/50">
                       <td className="px-3 py-1 text-gray-900 dark:text-gray-100">{a.person}</td>
                       <td className="px-3 py-1 text-gray-900 dark:text-gray-100">{a.serviceId}</td>
-                      <td className="px-3 py-1 text-gray-900 dark:text-gray-100">{a.sold}</td>
                       <td className="px-3 py-1 text-gray-900 dark:text-gray-100">{formatCurrency(a.gm)}</td>
                     </tr>
                   ))

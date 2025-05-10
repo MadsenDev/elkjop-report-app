@@ -236,9 +236,6 @@ export default function DaySummary({ day }: DaySummaryProps) {
                   <card.icon className="w-5 h-5" />
                 </span>
                 <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{card.name}</span>
-                {card.tooltip && (
-                  <InformationCircleIcon className="w-4 h-4 ml-1 text-gray-300 dark:text-gray-600 group-hover:text-elkjop-green transition" />
-                )}
               </div>
               <div className="flex items-end space-x-2 mb-2">
                 <AnimatedNumber value={card.value} className="text-2xl font-extrabold text-gray-900 dark:text-white" />
@@ -252,6 +249,11 @@ export default function DaySummary({ day }: DaySummaryProps) {
                     className="h-full bg-elkjop-green"
                     style={{ width: `${Math.min(card.progress * 100, 100)}%` }}
                   />
+                </div>
+              )}
+              {card.onClick && (
+                <div className="absolute bottom-2 right-2 text-xs text-gray-400 dark:text-gray-500">
+                  Click to edit
                 </div>
               )}
             </motion.div>
