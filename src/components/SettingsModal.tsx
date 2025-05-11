@@ -664,8 +664,8 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-1">
                           <li>98.5% TypeScript</li>
                           <li>1.5% Other</li>
-                          <li>Proprietary Software</li>
-                          <li>Elkjøp Internal Use</li>
+                          <li>All Rights Reserved</li>
+                          <li>Personal Project</li>
                         </ul>
                       </div>
                     </div>
@@ -675,12 +675,12 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Legal Notice</h3>
                     <p className="text-gray-600 dark:text-gray-400">
                       This application is developed as a personal project by Christoffer Madsen. The code and implementation 
-                      are the intellectual property of the developer. Elkjøp branding, logos, and related assets are the 
-                      property of Elkjøp and are used with permission for internal use only.
+                      are protected by copyright law with All Rights Reserved. No part of this software may be used, modified, 
+                      or distributed without explicit written permission from the copyright holder.
                     </p>
                     <p className="text-gray-600 dark:text-gray-400 mt-2">
-                      This software is provided as-is, without any warranty. While developed for use within Elkjøp, 
-                      it is not an official Elkjøp product.
+                      Elkjøp branding, logos, and related assets are the property of Elkjøp and are used with permission 
+                      for internal use only. This software is not an official Elkjøp product.
                     </p>
                   </div>
 
