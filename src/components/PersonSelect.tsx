@@ -17,6 +17,8 @@ interface PersonSelectProps {
 
 export default function PersonSelect({ value, onChange, label = 'Select Person', people }: PersonSelectProps) {
   const [query, setQuery] = useState('');
+  
+  console.log('PersonSelect received people:', people);
 
   const filteredPeople =
     query === ''

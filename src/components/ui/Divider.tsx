@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface DividerProps {
   text?: string;
   orientation?: 'horizontal' | 'vertical';

@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { FaCheckCircle, FaTimesCircle, FaChartLine } from 'react-icons/fa';
-import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import useReportStore from '../store';
 import { Day } from '../types';
 import { formatCurrency } from '../utils/format';
@@ -16,31 +16,10 @@ export default function GoalProgress({ day, section, color }: GoalProgressProps)
   const insuranceAgreements = useReportStore((s) => s.insuranceAgreements);
   const precalibratedTVs = useReportStore((s) => s.precalibratedTVs);
   const repairTickets = useReportStore((s) => s.repairTickets);
-
-  const [goalsData, setGoalsData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const goals = useReportStore((s) => s.goals);
   const [isHovered, setIsHovered] = useState(false);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch('/goals.json');
-        if (!res.ok) throw new Error('Failed to fetch goals');
-        setGoalsData(await res.json());
-        setLoading(false);
-      } catch (e) {
-        setError('Could not load goals from public/.');
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
-
-  if (loading) return <div className="text-gray-700 dark:text-gray-300">Loading goals...</div>;
-  if (error) return <div className="text-red-600 dark:text-red-400">{error}</div>;
-
-  const sectionData = goalsData.find(g => g.section === section);
+  const sectionData = goals.find(g => g.section === section);
   if (!sectionData) return null;
 
   const dayIndex = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(day);

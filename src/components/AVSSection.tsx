@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import useReportStore from "../store";
 import { Day } from "../types";
 import { motion, AnimatePresence } from "framer-motion";
@@ -27,6 +27,8 @@ export default function AVSSection({ day }: AVSSectionProps) {
   const avsAssignments = useReportStore((state) => state.avsAssignments);
   const setAVSAssignment = useReportStore((state) => state.setAVSAssignment);
   const editAVSAssignment = useReportStore((state) => state.editAVSAssignment);
+  const services = useReportStore((state) => state.services);
+  const people = useReportStore((state) => state.people);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({
@@ -36,50 +38,9 @@ export default function AVSSection({ day }: AVSSectionProps) {
   });
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
-  const [servicesData, setServicesData] = useState<any[]>([]);
-  const [peopleData, setPeopleData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [peopleLoading, setPeopleLoading] = useState(true);
-  const [peopleError, setPeopleError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch('/services.json');
-        if (!res.ok) throw new Error('Failed to fetch services');
-        setServicesData(await res.json());
-        setLoading(false);
-      } catch (e) {
-        setError('Kunne ikke laste services fra public/.');
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    async function fetchPeople() {
-      try {
-        const res = await fetch('/people.json');
-        if (!res.ok) throw new Error('Failed to fetch people');
-        setPeopleData(await res.json());
-        setPeopleLoading(false);
-      } catch (e) {
-        setPeopleError('Kunne ikke laste people fra public/.');
-        setPeopleLoading(false);
-      }
-    }
-    fetchPeople();
-  }, []);
-
-  if (loading || peopleLoading) return <div>Loading services/people...</div>;
-  if (error) return <div>{error}</div>;
-  if (peopleError) return <div>{peopleError}</div>;
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const service = servicesData.find((s) => s.id === formData.serviceId);
+    const service = services.find((s) => s.id === formData.serviceId);
     if (service) {
       const price = formData.priceOverride ? parseFloat(formData.priceOverride) : service.price;
       const { gm } = calculateGrossMargin(service.cost, price);
@@ -111,7 +72,7 @@ export default function AVSSection({ day }: AVSSectionProps) {
 
   const handleEdit = (index: number) => {
     const assignment = avsAssignments[index];
-    const service = servicesData.find(s => s.id === assignment.serviceId);
+    const service = services.find(s => s.id === assignment.serviceId);
     if (!service) return;
 
     setFormData({
@@ -132,7 +93,7 @@ export default function AVSSection({ day }: AVSSectionProps) {
 
   const grouped = avsAssignments
     .filter((a: AVSAssignment) => a.day === day)
-    .reduce<Record<string, { serviceId: string; sold: number; price: number; gm: number; index: number }[]>>((acc, a, i) => {
+    .reduce<Record<string, { serviceId: string; sold: number; price: number; gm: number; index: number }[]>>((acc, a) => {
       if (!acc[a.person]) {
         acc[a.person] = [];
       }
@@ -201,7 +162,7 @@ export default function AVSSection({ day }: AVSSectionProps) {
                 <div className="flex flex-wrap gap-2">
                   <AnimatePresence>
                     {personServices.map((service) => {
-                      const serviceDetails = servicesData.find((s: any) => s.id === service.serviceId);
+                      const serviceDetails = services.find((s) => s.id === service.serviceId);
                       return (
                         <Chip 
                           key={service.serviceId} 
@@ -254,7 +215,7 @@ export default function AVSSection({ day }: AVSSectionProps) {
               value={formData.person}
               onChange={(value) => setFormData({ ...formData, person: value })}
               label="Select person"
-              people={peopleData}
+              people={people}
             />
           </div>
         </div>
@@ -265,7 +226,7 @@ export default function AVSSection({ day }: AVSSectionProps) {
             value={formData.serviceId}
             onChange={(serviceId) => setFormData({ ...formData, serviceId })}
             label="Select a service"
-            services={servicesData}
+            services={services}
           />
         </div>
 

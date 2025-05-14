@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import useReportStore from '../store';
 import { formatCurrency } from '../utils/format';
 import { Day } from '../types';
@@ -42,6 +42,7 @@ export default function WeekReportCard() {
   const precalibratedTVs = useReportStore((s) => s.precalibratedTVs);
   const repairTickets = useReportStore((s) => s.repairTickets);
   const qualityInspections = useReportStore((s) => s.qualityInspections);
+  const goals = useReportStore((s) => s.goals);
 
   // Cumulative stats for the week
   const totalGM = avsAssignments.reduce((sum, a) => sum + (a.gm || 0), 0);
@@ -68,36 +69,11 @@ export default function WeekReportCard() {
     return { day, gm, avs, ta, tv, tickets, qi };
   });
 
-  // State for loaded data
-  const [goalsData, setGoalsData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [goalsRes] = await Promise.all([
-          fetch('/goals.json'),
-        ]);
-        if (!goalsRes.ok) throw new Error('Failed to fetch data');
-        setGoalsData(await goalsRes.json());
-        setLoading(false);
-      } catch (e) {
-        setError('Could not load data from public/.');
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
-
   // Weekly goals (Saturday goal)
-  const taGoal = goalsData.find(g => g.section === 'Insurance Agreements')?.goals[5] || 0;
-  const tvGoal = goalsData.find(g => g.section === 'Precalibrated TVs')?.goals[5] || 0;
-  const ticketsGoal = goalsData.find(g => g.section === 'RepairTickets')?.goals[5] || 0;
-  const gmGoal = goalsData.find(g => g.section === 'AVS')?.goals[5] || 0;
-
-  if (loading) return <div className="text-gray-700 dark:text-gray-300">Loading weekly data...</div>;
-  if (error) return <div className="text-red-600 dark:text-red-400">{error}</div>;
+  const taGoal = goals.find(g => g.section === 'Insurance Agreements')?.goals[5] || 0;
+  const tvGoal = goals.find(g => g.section === 'Precalibrated TVs')?.goals[5] || 0;
+  const ticketsGoal = goals.find(g => g.section === 'RepairTickets')?.goals[5] || 0;
+  const gmGoal = goals.find(g => g.section === 'AVS')?.goals[5] || 0;
 
   // Per-person breakdown
   const peopleList = Array.from(people).sort();

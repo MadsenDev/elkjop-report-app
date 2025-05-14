@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import useReportStore from "../store";
 import { Day } from "../types";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,6 +17,7 @@ interface PrecalibratedTVSectionProps {
 export default function PrecalibratedTVSection({ day }: PrecalibratedTVSectionProps) {
   const precalibratedTVs = useReportStore((state) => state.precalibratedTVs);
   const setPrecalibratedTV = useReportStore((state) => state.setPrecalibratedTV);
+  const people = useReportStore((state) => state.people);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,25 +27,6 @@ export default function PrecalibratedTVSection({ day }: PrecalibratedTVSectionPr
     completed: 1,
   });
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-
-  const [peopleData, setPeopleData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch('/people.json');
-        if (!res.ok) throw new Error('Failed to fetch people');
-        setPeopleData(await res.json());
-        setLoading(false);
-      } catch (e) {
-        setError('Could not load people from public/.');
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,9 +83,6 @@ export default function PrecalibratedTVSection({ day }: PrecalibratedTVSectionPr
       acc[t.person] += t.completed;
       return acc;
     }, {});
-
-  if (loading) return <div className="text-gray-700 dark:text-gray-300">Loading people...</div>;
-  if (error) return <div className="text-red-600 dark:text-red-400">{error}</div>;
 
   return (
     <Card
@@ -194,7 +173,7 @@ export default function PrecalibratedTVSection({ day }: PrecalibratedTVSectionPr
               value={formData.person}
               onChange={(value) => setFormData({ ...formData, person: value })}
               label="Select person"
-              people={peopleData}
+              people={people}
             />
           </div>
         </div>

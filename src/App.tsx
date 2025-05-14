@@ -9,13 +9,20 @@ import RepairTicketsSection from './components/RepairTicketsSection';
 import LoadingScreen from './components/LoadingScreen';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { DisplaySettingsProvider } from './contexts/DisplaySettingsContext';
+import { ToastProvider } from './contexts/ToastContext';
+import ErrorBoundary from './components/ErrorBoundary';
+import { VERSION } from './config/version';
 
 export default function App() {
-  const selectedDay = useReportStore((state) => state.selectedDay);
-  const setSelectedDay = useReportStore((state) => state.setSelectedDay);
+  const selectedDay = useReportStore((state: any) => state.selectedDay);
+  const setSelectedDay = useReportStore((state: any) => state.setSelectedDay);
+  const { loadServices, loadPeople, loadGoals } = useReportStore();
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('App mounted');
+    
     // Check for dark mode preference
     if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.documentElement.classList.add('dark');
@@ -23,16 +30,23 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
 
-    // Simulate loading time for initial data fetch
     const loadInitialData = async () => {
       try {
-        // Add a longer loading time for testing
+        setIsLoading(true);
+        setLoadError(null);
+        console.log('Starting to load initial data...');
         await Promise.all([
-          new Promise(resolve => setTimeout(resolve, 3000)), // 5 seconds
-          // Add any actual data loading here
+          loadServices(),
+          loadPeople(),
+          loadGoals()
         ]);
+        console.log('Initial data loaded successfully');
+      } catch (error) {
+        console.error('Failed to load initial data:', error);
+        setLoadError(error instanceof Error ? error.message : 'Failed to load data');
       } finally {
-        setIsLoading(false);
+        // Ensure loading screen shows for at least 1 second to prevent flickering
+        setTimeout(() => setIsLoading(false), 3000);
       }
     };
 
@@ -48,32 +62,53 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []);
+  }, [loadServices, loadPeople, loadGoals]);
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return <LoadingScreen version={VERSION} />;
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Error Loading Data</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">{loadError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <ThemeProvider>
-      <DisplaySettingsProvider>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-          <Layout
-            selectedDay={selectedDay}
-            onDayChange={setSelectedDay}
-          >
-            <div className="space-y-8">
-              <DaySummary day={selectedDay} />
-              <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-                <AVSSection day={selectedDay} />
-                <InsuranceAgreementSection day={selectedDay} />
-                <PreklargjortTVSection day={selectedDay} />
-                <RepairTicketsSection day={selectedDay} />
-              </div>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <DisplaySettingsProvider>
+          <ToastProvider>
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+              <Layout
+                selectedDay={selectedDay}
+                onDayChange={setSelectedDay}
+              >
+                <div className="space-y-8">
+                  <DaySummary day={selectedDay} />
+                  <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                    <AVSSection day={selectedDay} />
+                    <InsuranceAgreementSection day={selectedDay} />
+                    <PreklargjortTVSection day={selectedDay} />
+                    <RepairTicketsSection day={selectedDay} />
+                  </div>
+                </div>
+              </Layout>
             </div>
-          </Layout>
-        </div>
-      </DisplaySettingsProvider>
-    </ThemeProvider>
+          </ToastProvider>
+        </DisplaySettingsProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

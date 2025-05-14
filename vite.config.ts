@@ -1,8 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: './',
   plugins: [react()],
   build: {
     rollupOptions: {
@@ -29,6 +31,13 @@ export default defineConfig({
         '@tauri-apps/api/updater',
         '@tauri-apps/api/websocket',
       ],
+    },
+  },
+  resolve: {
+    alias: {
+      '@tauri-apps/api': path.resolve(__dirname, 'node_modules/@tauri-apps/api/dist/index.js'),
+      '@tauri-apps/api/path': path.resolve(__dirname, 'node_modules/@tauri-apps/api/dist/index.js/path'),
+      '@tauri-apps/api/core': path.resolve(__dirname, 'node_modules/@tauri-apps/api/dist/index.js/core'),
     },
   },
 })

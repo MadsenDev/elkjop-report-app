@@ -3,16 +3,17 @@ import useReportStore from "../store";
 import { Day } from "../types";
 import { formatCurrency } from "../utils/format";
 import {
-  UserGroupIcon,
   CurrencyDollarIcon,
+  UserGroupIcon,
   ArrowTrendingUpIcon,
-  WrenchScrewdriverIcon,
   CalendarIcon,
-  InformationCircleIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { useEffect, useState } from "react";
 import Card from "./ui/Card";
+import NumberInput from "./ui/NumberInput";
+import Confetti from 'react-confetti';
+import { useWindowSize } from 'react-use';
 
 interface DaySummaryProps {
   day: Day;
@@ -49,27 +50,10 @@ export default function DaySummary({ day }: DaySummaryProps) {
   const repairTickets = useReportStore((state) => state.repairTickets);
   const qualityInspections = useReportStore((state) => state.qualityInspections);
   const setQualityInspection = useReportStore((state) => state.setQualityInspection);
+  const goals = useReportStore((state) => state.goals);
   const [isQIModalOpen, setIsQIModalOpen] = useState(false);
   const [qiCount, setQICount] = useState(0);
-  const [goalsData, setGoalsData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Fetch goals data
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch('/goals.json');
-        if (!res.ok) throw new Error('Failed to fetch goals');
-        setGoalsData(await res.json());
-        setLoading(false);
-      } catch (e) {
-        setError('Could not load goals from public/.');
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
+  const { width, height } = useWindowSize();
 
   // Update QI count when day changes
   useEffect(() => {
@@ -112,10 +96,10 @@ export default function DaySummary({ day }: DaySummaryProps) {
   ]);
 
   // Calculate progress for each section (cumulative)
-  const avsGoal = goalsData.find(g => g.section === 'AVS')?.goals[dayIdx] || 0;
-  const insuranceAgreementsGoal = goalsData.find(g => g.section === 'Insurance Agreements')?.goals[dayIdx] || 0;
-  const precalibratedTVsGoal = goalsData.find(g => g.section === 'Precalibrated TVs')?.goals[dayIdx] || 0;
-  const repairTicketsGoal = goalsData.find(g => g.section === 'RepairTickets')?.goals[dayIdx] || 0;
+  const avsGoal = goals.find(g => g.section === 'AVS')?.goals[dayIdx] || 0;
+  const insuranceAgreementsGoal = goals.find(g => g.section === 'Insurance Agreements')?.goals[dayIdx] || 0;
+  const precalibratedTVsGoal = goals.find(g => g.section === 'Precalibrated TVs')?.goals[dayIdx] || 0;
+  const repairTicketsGoal = goals.find(g => g.section === 'RepairTickets')?.goals[dayIdx] || 0;
 
   const avsProgress = avsGoal ? totalGM / avsGoal : 0;
   const insuranceAgreementsProgress = insuranceAgreementsGoal ? insuranceAgreementsTotal / insuranceAgreementsGoal : 0;
@@ -126,11 +110,14 @@ export default function DaySummary({ day }: DaySummaryProps) {
   const cappedProgresses = [avsProgress, insuranceAgreementsProgress, precalibratedTVsProgress, repairTicketsProgress].map(p => Math.min(p, 1));
   const allGoalsMet = [avsProgress, insuranceAgreementsProgress, precalibratedTVsProgress, repairTicketsProgress].every(p => p >= 1);
 
-  // If all goals are met, use real progress (can exceed 100%), else use capped
+  // Calculate daily progress
   const dailyProgress = ((allGoalsMet
     ? [avsProgress, insuranceAgreementsProgress, precalibratedTVsProgress, repairTicketsProgress]
     : cappedProgresses
   ).reduce((a, b) => a + b, 0) / 4) * 100;
+
+  // Calculate if we should show festive design
+  const isGoalMet = dailyProgress >= 100;
 
   // QI logic
   const qiForDay = qualityInspections.find(qi => qi.day === day)?.count || 0;
@@ -163,7 +150,7 @@ export default function DaySummary({ day }: DaySummaryProps) {
       name: 'Total Services',
       value: totalServices,
       goal: null,
-      icon: WrenchScrewdriverIcon,
+      icon: CurrencyDollarIcon,
       color: 'from-blue-400 to-blue-600',
       progress: null,
       tooltip: 'Number of services sold (cumulative for the week).',
@@ -184,13 +171,10 @@ export default function DaySummary({ day }: DaySummaryProps) {
       icon: ArrowTrendingUpIcon,
       color: 'from-yellow-300 to-yellow-500',
       progress: null,
-      tooltip: 'Quality Inspections performed for this day. Click to edit.',
+      tooltip: 'Number of items currently in Quality Inspection. Click to edit.',
       onClick: () => setIsQIModalOpen(true),
     },
   ];
-
-  if (loading) return <div>Loading goals...</div>;
-  if (error) return <div>{error}</div>;
 
   return (
     <Card
@@ -198,16 +182,61 @@ export default function DaySummary({ day }: DaySummaryProps) {
       color="indigo"
       icon={<CalendarIcon className="w-6 h-6" />}
       description="Daily Progress Overview"
+      className={isGoalMet ? "relative overflow-hidden" : ""}
     >
+      {isGoalMet && (
+        <Confetti
+          width={width}
+          height={height}
+          recycle={true}
+          numberOfPieces={50}
+          gravity={0.1}
+          colors={['#4F46E5', '#10B981', '#3B82F6', '#F59E0B']}
+          opacity={0.3}
+          style={{ pointerEvents: 'none' }}
+        />
+      )}
+      {isGoalMet && (
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 animate-gradient-x" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(120,119,198,0.3),rgba(255,255,255,0))]" />
+        </div>
+      )}
       <div className="space-y-6">
         {/* Daily Progress - Horizontal */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-1">
-            <span className="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400">
-              <AnimatedNumber value={Math.round(dailyProgress)} />%
-            </span>
-            {dailyProgress >= 100 && (
-              <span className="ml-2 px-2 py-1 rounded bg-indigo-500 text-white text-xs font-bold">Goal Met!</span>
+            <motion.div
+              animate={isGoalMet ? {
+                scale: [1, 1.1, 1],
+                rotate: [0, 5, -5, 0],
+              } : {}}
+              transition={{ duration: 0.5, repeat: isGoalMet ? Infinity : 0, repeatDelay: 2 }}
+              className="relative"
+            >
+              <span className={`text-2xl font-extrabold ${isGoalMet ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                <AnimatedNumber value={Math.round(dailyProgress)} />%
+              </span>
+              {isGoalMet && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-2 -right-2"
+                >
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold">
+                    ✨
+                  </span>
+                </motion.div>
+              )}
+            </motion.div>
+            {isGoalMet && (
+              <motion.span
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="px-3 py-1 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold shadow-lg"
+              >
+                Goal Met! 🎉
+              </motion.span>
             )}
           </div>
           <div className="w-full h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -215,7 +244,11 @@ export default function DaySummary({ day }: DaySummaryProps) {
               initial={{ width: 0 }}
               animate={{ width: `${Math.min(dailyProgress, 100)}%` }}
               transition={{ duration: 0.7 }}
-              className={`h-3 rounded-full ${dailyProgress >= 100 ? 'bg-indigo-500' : 'bg-indigo-600'}`}
+              className={`h-3 rounded-full ${
+                isGoalMet 
+                  ? 'bg-gradient-to-r from-indigo-500 to-purple-500 shadow-lg shadow-indigo-500/20' 
+                  : 'bg-indigo-600'
+              }`}
             />
           </div>
           <span className="mt-1 text-xs text-gray-500 dark:text-gray-400 font-medium">Daily Progress</span>
@@ -227,26 +260,51 @@ export default function DaySummary({ day }: DaySummaryProps) {
             <motion.div
               key={card.name}
               whileHover={{ scale: 1.03, boxShadow: '0 4px 16px rgba(0,0,0,0.10)' }}
-              className={`relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-4 flex flex-col items-start min-h-[110px] transition-transform duration-200 group ${card.onClick ? 'cursor-pointer' : ''}`}
+              className={`relative bg-white dark:bg-gray-800 border ${
+                isGoalMet 
+                  ? 'border-indigo-200 dark:border-indigo-800 shadow-lg shadow-indigo-500/5' 
+                  : 'border-gray-200 dark:border-gray-700'
+              } rounded-xl p-4 flex flex-col items-start min-h-[110px] transition-all duration-200 group ${
+                card.onClick ? 'cursor-pointer' : ''
+              }`}
               aria-label={card.name}
               onClick={card.onClick}
             >
               <div className="flex items-center mb-2">
-                <span className={`inline-flex items-center justify-center rounded-full w-8 h-8 mr-3 bg-gray-100 dark:bg-gray-700 ${iconColors[idx % iconColors.length]}`}>
+                <span className={`inline-flex items-center justify-center rounded-full w-8 h-8 mr-3 ${
+                  isGoalMet 
+                    ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' 
+                    : 'bg-gray-100 dark:bg-gray-700'
+                } ${iconColors[idx % iconColors.length]}`}>
                   <card.icon className="w-5 h-5" />
                 </span>
                 <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{card.name}</span>
               </div>
               <div className="flex items-end space-x-2 mb-2">
-                <AnimatedNumber value={card.value} className="text-2xl font-extrabold text-gray-900 dark:text-white" />
+                <AnimatedNumber 
+                  value={card.value} 
+                  className={`text-2xl font-extrabold ${
+                    isGoalMet 
+                      ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500' 
+                      : 'text-gray-900 dark:text-white'
+                  }`} 
+                />
                 {card.goal && (
-                  <span className="text-sm font-semibold text-elkjop-green/90">/ {card.goal}</span>
+                  <span className={`text-sm font-semibold ${
+                    isGoalMet 
+                      ? 'text-purple-500' 
+                      : 'text-elkjop-green/90'
+                  }`}>/ {card.goal}</span>
                 )}
               </div>
               {card.progress !== null && card.goal && (
                 <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-elkjop-green"
+                    className={`h-full ${
+                      isGoalMet 
+                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500' 
+                        : 'bg-elkjop-green'
+                    }`}
                     style={{ width: `${Math.min(card.progress * 100, 100)}%` }}
                   />
                 </div>
@@ -286,18 +344,18 @@ export default function DaySummary({ day }: DaySummaryProps) {
                 </h3>
                 <div className="mt-2">
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Enter the number of quality inspections performed for {day}.
+                    Enter the number of items currently in Quality Inspection for {day}. Lower numbers are better.
                   </p>
                 </div>
               </div>
             </div>
             <div className="mt-6">
-              <input
-                type="number"
+              <NumberInput
                 value={qiCount}
-                onChange={(e) => setQICount(parseInt(e.target.value) || 0)}
-                className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                min="0"
+                onChange={setQICount}
+                min={0}
+                label="Items in Quality Inspection"
+                helperText="Aim to keep this number as low as possible"
               />
             </div>
             <div className="mt-6 flex justify-end gap-3">

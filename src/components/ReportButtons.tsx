@@ -1,5 +1,5 @@
 import { CalendarIcon, ChartBarIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
-import { PDFDownloadLink, pdf } from '@react-pdf/renderer';
+import { pdf } from '@react-pdf/renderer';
 import PDFReport from './PDFReport';
 import useReportStore from '../store';
 import { useState, useEffect } from 'react';
@@ -16,7 +16,6 @@ export default function ReportButtons({ onDayReport, onWeekReport, selectedDay }
   const insuranceAgreements = useReportStore((state) => state.insuranceAgreements);
   const precalibratedTVs = useReportStore((state) => state.precalibratedTVs);
   const repairTickets = useReportStore((state) => state.repairTickets);
-  const qualityInspections = useReportStore((state) => state.qualityInspections);
   const [goalsData, setGoalsData] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -43,7 +42,6 @@ export default function ReportButtons({ onDayReport, onWeekReport, selectedDay }
           insuranceAgreements={insuranceAgreements}
           precalibratedTVs={precalibratedTVs}
           repairTickets={repairTickets}
-          qualityInspections={qualityInspections}
           goalsData={goalsData}
         />
       ).toBlob();

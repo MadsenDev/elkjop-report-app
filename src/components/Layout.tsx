@@ -3,14 +3,11 @@ import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { Day } from '../types';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import * as htmlToImage from 'html-to-image';
-import { PDFDownloadLink } from '@react-pdf/renderer';
 import Modal from './Modal';
 import DarkModeToggle from './DarkModeToggle';
 import HiddenReports from './HiddenReports';
 import ReportButtons from './ReportButtons';
 import SettingsModal from './SettingsModal';
-import PDFReport from './PDFReport';
-import useReportStore from '../store';
 
 declare global {
   interface Window {
@@ -37,12 +34,6 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
   const modalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const avsAssignments = useReportStore((state) => state.avsAssignments);
-  const insuranceAgreements = useReportStore((state) => state.insuranceAgreements);
-  const precalibratedTVs = useReportStore((state) => state.precalibratedTVs);
-  const repairTickets = useReportStore((state) => state.repairTickets);
-  const qualityInspections = useReportStore((state) => state.qualityInspections);
-  const [goalsData, setGoalsData] = useState<any[]>([]);
   const [partyMode, setPartyMode] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
   const partyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -207,7 +198,7 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
 
       {/* Party Easter Egg Button */}
       <motion.button
-        className="fixed bottom-4 right-4 w-2 h-2 rounded-full bg-gray-400/10 hover:bg-gray-400/20 transition-colors z-50"
+        className="fixed top-4 right-4 w-2 h-2 rounded-full bg-gray-400/10 hover:bg-gray-400/20 transition-colors z-50"
         onMouseEnter={startParty}
         onMouseLeave={stopParty}
         whileHover={{ scale: 1.5 }}
@@ -471,12 +462,14 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
                     </svg>
                     <span>Selected: <span className="font-medium text-white">{selectedDay}</span></span>
                   </div>
-                  <button
-                    onClick={() => setResetModalOpen(true)}
-                    className="mt-4 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
-                  >
-                    Reset Data
-                  </button>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => setResetModalOpen(true)}
+                      className="w-full px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+                    >
+                      Reset Data
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.aside>
@@ -533,7 +526,7 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="max-w-7xl mx-auto space-y-8"
+              className="space-y-8"
             >
               {children}
             </motion.div>

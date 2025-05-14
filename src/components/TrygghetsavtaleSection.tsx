@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import useReportStore from '../store';
 import { Day } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,6 +21,7 @@ interface FormData {
 export default function InsuranceAgreementSection({ day }: InsuranceAgreementSectionProps) {
   const insuranceAgreements = useReportStore((state) => state.insuranceAgreements);
   const setInsuranceAgreement = useReportStore((state) => state.setInsuranceAgreement);
+  const people = useReportStore((state) => state.people);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -30,25 +31,6 @@ export default function InsuranceAgreementSection({ day }: InsuranceAgreementSec
     sold: 1
   });
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-
-  const [peopleData, setPeopleData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch('/people.json');
-        if (!res.ok) throw new Error('Failed to fetch people');
-        setPeopleData(await res.json());
-        setLoading(false);
-      } catch (e) {
-        setError('Could not load people from public/.');
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,9 +79,6 @@ export default function InsuranceAgreementSection({ day }: InsuranceAgreementSec
       acc[t.person] = (acc[t.person] || 0) + t.sold;
       return acc;
     }, {});
-
-  if (loading) return <div className="text-gray-700 dark:text-gray-300">Loading people...</div>;
-  if (error) return <div className="text-red-600 dark:text-red-400">{error}</div>;
 
   return (
     <Card
@@ -190,7 +169,7 @@ export default function InsuranceAgreementSection({ day }: InsuranceAgreementSec
               value={formData.person}
               onChange={(value) => setFormData({ ...formData, person: value })}
               label="Select person"
-              people={peopleData}
+              people={people}
             />
           </div>
         </div>

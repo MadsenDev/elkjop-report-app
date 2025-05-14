@@ -1,6 +1,10 @@
 import { motion } from 'framer-motion';
 
-export default function LoadingScreen() {
+interface LoadingScreenProps {
+  version: string;
+}
+
+export default function LoadingScreen({ version }: LoadingScreenProps) {
   return (
     <div className="fixed inset-0 bg-elkjop-blue flex items-center justify-center">
       {/* Subtle gradient animation */}
@@ -67,7 +71,7 @@ export default function LoadingScreen() {
           transition={{ delay: 1, duration: 0.5 }}
           className="mt-8 text-white/50 text-sm"
         >
-          Version 1.0.0
+          Version {version}
         </motion.p>
       </div>
     </div>

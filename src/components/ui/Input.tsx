@@ -1,5 +1,5 @@
 import React, { forwardRef } from 'react';
-import { FaSearch, FaTimes } from 'react-icons/fa';
+import { FaTimes } from 'react-icons/fa';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;

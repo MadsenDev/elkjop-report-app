@@ -1,12 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import useReportStore from "../store";
 import { Day } from "../types";
 import { motion, AnimatePresence } from "framer-motion";
-import Modal from "./Modal";
 import PersonSelect from "./PersonSelect";
 import Card, { Chip, Button } from "./ui/Card";
 import GoalProgress from "./GoalProgress";
-import { WrenchScrewdriverIcon } from "@heroicons/react/24/outline";
+import { WrenchIcon } from "@heroicons/react/24/outline";
 import type { RepairTicket } from "../store";
 import SectionModal from "./ui/SectionModal";
 import NumberInput from "./ui/NumberInput";
@@ -18,7 +17,7 @@ interface RepairTicketsSectionProps {
 export default function RepairTicketsSection({ day }: RepairTicketsSectionProps) {
   const repairTickets = useReportStore((state) => state.repairTickets);
   const setRepairTicket = useReportStore((state) => state.setRepairTicket);
-  const editRepairTicket = useReportStore((state) => state.editRepairTicket);
+  const people = useReportStore((state) => state.people);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,28 +27,6 @@ export default function RepairTicketsSection({ day }: RepairTicketsSectionProps)
     created: 1,
   });
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-
-  const [peopleData, setPeopleData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch('/people.json');
-        if (!res.ok) throw new Error('Failed to fetch people');
-        setPeopleData(await res.json());
-        setLoading(false);
-      } catch (e) {
-        setError('Kunne ikke laste people fra public/.');
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
-
-  if (loading) return <div className="text-gray-700 dark:text-gray-300">Loading people...</div>;
-  if (error) return <div className="text-red-600 dark:text-red-400">{error}</div>;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,7 +83,7 @@ export default function RepairTicketsSection({ day }: RepairTicketsSectionProps)
     <Card
       title="Repair Tickets"
       color="orange"
-      icon={<WrenchScrewdriverIcon className="w-6 h-6" />}
+      icon={<WrenchIcon className="w-6 h-6" />}
       description="Repair Tickets Created"
       action={
         <Button onClick={() => {
@@ -191,7 +168,7 @@ export default function RepairTicketsSection({ day }: RepairTicketsSectionProps)
               value={formData.person}
               onChange={(value) => setFormData({ ...formData, person: value })}
               label="Select person"
-              people={peopleData}
+              people={people}
             />
           </div>
         </div>

@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import useReportStore from "../store";
 import { Day } from "../types";
 import { formatCurrency } from "../utils/format";
@@ -10,7 +9,6 @@ import {
   WrenchIcon,
   ArrowTrendingUpIcon,
 } from '@heroicons/react/24/outline';
-import { useEffect, useState } from "react";
 
 interface DayReportCardProps {
   day: Day;
@@ -35,24 +33,7 @@ export default function DayReportCard({ day }: DayReportCardProps) {
   const precalibratedTVs = useReportStore((state) => state.precalibratedTVs);
   const repairTickets = useReportStore((state) => state.repairTickets);
   const qualityInspections = useReportStore((state) => state.qualityInspections);
-  const [goalsData, setGoalsData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch('/goals.json');
-        if (!res.ok) throw new Error('Failed to fetch goals');
-        setGoalsData(await res.json());
-        setLoading(false);
-      } catch (e) {
-        setError('Could not load goals from public/.');
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
+  const goals = useReportStore((state) => state.goals);
 
   const daysOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const dayIdx = daysOrder.indexOf(day);
@@ -67,16 +48,13 @@ export default function DayReportCard({ day }: DayReportCardProps) {
   const qi = qualityInspections.find(qi => qi.day === day)?.count || 0;
 
   // Goals for this day
-  const gmGoal = goalsData.find(g => g.section === 'AVS')?.goals[dayIdx] || null;
-  const taGoal = goalsData.find(g => g.section === 'Insurance Agreements')?.goals[dayIdx] || null;
-  const tvGoal = goalsData.find(g => g.section === 'Precalibrated TVs')?.goals[dayIdx] || null;
-  const ticketsGoal = goalsData.find(g => g.section === 'RepairTickets')?.goals[dayIdx] || null;
-
-  if (loading) return <div className="text-gray-700 dark:text-gray-300">Loading goals...</div>;
-  if (error) return <div className="text-red-600 dark:text-red-400">{error}</div>;
+  const gmGoal = goals.find(g => g.section === 'AVS')?.goals[dayIdx] || null;
+  const taGoal = goals.find(g => g.section === 'Insurance Agreements')?.goals[dayIdx] || null;
+  const tvGoal = goals.find(g => g.section === 'Precalibrated TVs')?.goals[dayIdx] || null;
+  const ticketsGoal = goals.find(g => g.section === 'RepairTickets')?.goals[dayIdx] || null;
 
   return (
-      <div className="bg-white dark:bg-gray-800 max-w-lg px-4 sm:px-8 py-6 sm:py-8">
+      <div className="bg-white dark:bg-gray-800 px-4 sm:px-8 py-6 sm:py-8">
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
           <span className="text-elkjop-blue dark:text-elkjop-green">
