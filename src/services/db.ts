@@ -1,4 +1,5 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
+import { deleteDB } from 'idb';
 
 interface ElkjopDB extends DBSchema {
   people: {
@@ -45,6 +46,14 @@ class DatabaseService {
         }
       },
     });
+  }
+
+  async deleteDatabase() {
+    if (this.db) {
+      this.db.close();
+      this.db = null;
+    }
+    await deleteDB('elkjop-report-app');
   }
 
   // People operations

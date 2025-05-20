@@ -244,6 +244,17 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     }
   };
 
+  const handleDeleteDatabase = async () => {
+    if (window.confirm('Are you sure you want to delete all data? This cannot be undone.')) {
+      try {
+        await db.deleteDatabase();
+        window.location.reload();
+      } catch (error) {
+        showToast('Failed to delete database', 'error');
+      }
+    }
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -587,6 +598,20 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             Import Data
                           </Button>
                         </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                      <div className="space-y-4">
+                        <Label>Danger Zone</Label>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">These actions cannot be undone</p>
+                        <Button
+                          variant="outline"
+                          color="red"
+                          onClick={handleDeleteDatabase}
+                        >
+                          Delete All Data
+                        </Button>
                       </div>
                     </div>
                   </div>
