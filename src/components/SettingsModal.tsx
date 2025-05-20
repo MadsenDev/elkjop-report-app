@@ -79,7 +79,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     Goals: true,
     Display: false,
     Theme: false,
-    Data: false,
+    Data: true,
     About: true
   };
 

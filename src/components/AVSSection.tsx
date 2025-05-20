@@ -21,6 +21,8 @@ interface FormData {
   person: string;
   serviceId: string;
   priceOverride: string;
+  directGM: boolean;
+  gmOverride: string;
 }
 
 export default function AVSSection({ day }: AVSSectionProps) {
@@ -34,7 +36,9 @@ export default function AVSSection({ day }: AVSSectionProps) {
   const [formData, setFormData] = useState<FormData>({
     person: '',
     serviceId: '',
-    priceOverride: ''
+    priceOverride: '',
+    directGM: false,
+    gmOverride: ''
   });
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
@@ -43,7 +47,9 @@ export default function AVSSection({ day }: AVSSectionProps) {
     const service = services.find((s) => s.id === formData.serviceId);
     if (service) {
       const price = formData.priceOverride ? parseFloat(formData.priceOverride) : service.price;
-      const { gm } = calculateGrossMargin(service.cost, price);
+      const gm = formData.directGM 
+        ? parseFloat(formData.gmOverride) 
+        : calculateGrossMargin(service.cost, price).gm;
 
       const newAssignment = {
         day,
@@ -65,7 +71,9 @@ export default function AVSSection({ day }: AVSSectionProps) {
       setFormData({
         person: '',
         serviceId: '',
-        priceOverride: ''
+        priceOverride: '',
+        directGM: false,
+        gmOverride: ''
       });
     }
   };
@@ -79,6 +87,8 @@ export default function AVSSection({ day }: AVSSectionProps) {
       person: assignment.person,
       serviceId: assignment.serviceId,
       priceOverride: assignment.price !== service.price ? assignment.price.toString() : '',
+      directGM: false,
+      gmOverride: ''
     });
     setEditingIndex(index);
     setIsModalOpen(true);
@@ -124,7 +134,9 @@ export default function AVSSection({ day }: AVSSectionProps) {
           setFormData({
             person: '',
             serviceId: '',
-            priceOverride: ''
+            priceOverride: '',
+            directGM: false,
+            gmOverride: ''
           });
           setIsModalOpen(true);
         }} color="blue">
@@ -199,7 +211,9 @@ export default function AVSSection({ day }: AVSSectionProps) {
           setFormData({
             person: '',
             serviceId: '',
-            priceOverride: ''
+            priceOverride: '',
+            directGM: false,
+            gmOverride: ''
           });
         }} 
         title="Add Service"
@@ -230,16 +244,42 @@ export default function AVSSection({ day }: AVSSectionProps) {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Price Override (optional)</label>
-          <NumberInput
-            value={formData.priceOverride ? parseFloat(formData.priceOverride) : 0}
-            onChange={(value) => setFormData({ ...formData, priceOverride: value.toString() })}
-            min={0}
-            step={0.01}
-            helperText="Leave empty to use default price"
+        <div className="flex items-center gap-2 mb-4">
+          <input
+            type="checkbox"
+            id="directGM"
+            checked={formData.directGM}
+            onChange={(e) => setFormData({ ...formData, directGM: e.target.checked })}
+            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
           />
+          <label htmlFor="directGM" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Enter GM directly
+          </label>
         </div>
+
+        {formData.directGM ? (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Gross Margin</label>
+            <NumberInput
+              value={formData.gmOverride ? parseFloat(formData.gmOverride) : 0}
+              onChange={(value) => setFormData({ ...formData, gmOverride: value.toString() })}
+              min={0}
+              step={0.01}
+              helperText="Enter the gross margin amount"
+            />
+          </div>
+        ) : (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Price Override (optional)</label>
+            <NumberInput
+              value={formData.priceOverride ? parseFloat(formData.priceOverride) : 0}
+              onChange={(value) => setFormData({ ...formData, priceOverride: value.toString() })}
+              min={0}
+              step={0.01}
+              helperText="Leave empty to use default price"
+            />
+          </div>
+        )}
 
         {editingIndex !== null && (
           <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">

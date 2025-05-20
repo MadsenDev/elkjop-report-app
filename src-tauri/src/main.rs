@@ -4,18 +4,22 @@ use tauri::Manager;
 
 fn main() {
     tauri::Builder::default()
+        // Logging plugin
         .plugin(tauri_plugin_log::Builder::default().build())
+        
         .setup(|app| {
-            log::info!("Setting up Tauri application...");
+            log::info!("Setting up Tauri application…");
+
+            // Grab the main window created in tauri.conf.json
             let window = app.get_webview_window("main").unwrap();
             log::info!("Got main window, title: {}", window.title().unwrap());
-            
+
             #[cfg(debug_assertions)]
             {
-                log::info!("Opening dev tools...");
+                log::info!("Opening dev tools…");
                 window.open_devtools();
             }
-            
+
             // Add window event listeners
             let window_clone = window.clone();
             window.on_window_event(move |event| {

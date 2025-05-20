@@ -82,7 +82,7 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
     if (modalTimerRef.current) clearTimeout(modalTimerRef.current);
   };
 
-  // Generate Day Report CSV
+  // Generate Day Report Image
   const handleDayReport = async () => {
     console.log('Day Report button clicked');
     if (dayReportRef.current) {
@@ -100,7 +100,7 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
         document.body.removeChild(link);
         openModalWithCountdown('The daily summary was downloaded as an image. You can find the image in your Downloads folder.', 5);
       } catch (err) {
-        openModalWithCountdown('Could not download daily image: ' + err, 5);
+        openModalWithCountdown('Could not generate daily image: ' + err, 5);
       }
     }
   };
@@ -123,7 +123,7 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
         document.body.removeChild(link);
         openModalWithCountdown('The weekly summary was downloaded as an image. You can find the image in your Downloads folder.', 5);
       } catch (err) {
-        openModalWithCountdown('Could not download weekly image: ' + err, 5);
+        openModalWithCountdown('Could not generate weekly image: ' + err, 5);
       }
     }
   }
