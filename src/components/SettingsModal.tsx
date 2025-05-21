@@ -13,7 +13,7 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
-type SettingsTab = 'People' | 'Services' | 'Goals' | 'Display' | 'Theme' | 'Data' | 'About';
+type SettingsTab = 'People' | 'Services' | 'Goals' | 'Display' | 'Theme' | 'Data' | 'Report' | 'Notifications' | 'Backup' | 'About';
 
 interface DisplaySettings {
   compactView: boolean;
@@ -54,6 +54,28 @@ interface DataSettings {
   };
 }
 
+interface ReportSettings {
+  defaultFormat: 'png' | 'pdf';
+  defaultQuality: 'low' | 'medium' | 'high';
+  defaultSize: 'small' | 'medium' | 'large';
+  autoExport: boolean;
+  autoExportOnSave: boolean;
+}
+
+interface NotificationSettings {
+  enabled: boolean;
+  sound: boolean;
+  duration: number;
+  goalsAchievement: boolean;
+}
+
+interface BackupSettings {
+  autoBackup: boolean;
+  backupFrequency: number;
+  retentionPeriod: number;
+  encryptBackups: boolean;
+}
+
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [settingsTab, setSettingsTab] = useState<SettingsTab>('About');
   const { showToast } = useToast();
@@ -80,6 +102,9 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     Display: false,
     Theme: false,
     Data: true,
+    Report: false,
+    Notifications: false,
+    Backup: false,
     About: true
   };
 
@@ -115,6 +140,40 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     };
   });
 
+  // Report Settings
+  const [reportSettings, setReportSettings] = useState<ReportSettings>(() => {
+    const saved = localStorage.getItem('reportSettings');
+    return saved ? JSON.parse(saved) : {
+      defaultFormat: 'png',
+      defaultQuality: 'high',
+      defaultSize: 'medium',
+      autoExport: false,
+      autoExportOnSave: false
+    };
+  });
+
+  // Notification Settings
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(() => {
+    const saved = localStorage.getItem('notificationSettings');
+    return saved ? JSON.parse(saved) : {
+      enabled: true,
+      sound: true,
+      duration: 3000,
+      goalsAchievement: true
+    };
+  });
+
+  // Backup Settings
+  const [backupSettings, setBackupSettings] = useState<BackupSettings>(() => {
+    const saved = localStorage.getItem('backupSettings');
+    return saved ? JSON.parse(saved) : {
+      autoBackup: true,
+      backupFrequency: 24, // hours
+      retentionPeriod: 30, // days
+      encryptBackups: true
+    };
+  });
+
   // Save settings to localStorage
   useEffect(() => {
     localStorage.setItem('themeSettings', JSON.stringify(themeSettings));
@@ -123,6 +182,18 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   useEffect(() => {
     localStorage.setItem('dataSettings', JSON.stringify(dataSettings));
   }, [dataSettings]);
+
+  useEffect(() => {
+    localStorage.setItem('reportSettings', JSON.stringify(reportSettings));
+  }, [reportSettings]);
+
+  useEffect(() => {
+    localStorage.setItem('notificationSettings', JSON.stringify(notificationSettings));
+  }, [notificationSettings]);
+
+  useEffect(() => {
+    localStorage.setItem('backupSettings', JSON.stringify(backupSettings));
+  }, [backupSettings]);
 
   // Handlers for People
   const handlePersonChange = (idx: number, field: string, value: string) => {
@@ -613,6 +684,225 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           Delete All Data
                         </Button>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {settingsTab === 'Report' && (
+              <div className="space-y-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Report Settings</h2>
+
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                  <div className="space-y-6">
+                    <div className="space-y-4">
+                      <Label>Default Export Format</Label>
+                      <div className="flex gap-4">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            checked={reportSettings.defaultFormat === 'png'}
+                            onChange={() => setReportSettings(prev => ({ ...prev, defaultFormat: 'png' }))}
+                            className="mr-2"
+                          />
+                          PNG
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            checked={reportSettings.defaultFormat === 'pdf'}
+                            onChange={() => setReportSettings(prev => ({ ...prev, defaultFormat: 'pdf' }))}
+                            className="mr-2"
+                          />
+                          PDF
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label>Default Quality</Label>
+                      <select
+                        value={reportSettings.defaultQuality}
+                        onChange={(e) => setReportSettings(prev => ({ ...prev, defaultQuality: e.target.value as 'low' | 'medium' | 'high' }))}
+                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                      >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label>Default Size</Label>
+                      <select
+                        value={reportSettings.defaultSize}
+                        onChange={(e) => setReportSettings(prev => ({ ...prev, defaultSize: e.target.value as 'small' | 'medium' | 'large' }))}
+                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                      >
+                        <option value="small">Small</option>
+                        <option value="medium">Medium</option>
+                        <option value="large">Large</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label>Auto-export</Label>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Automatically export reports periodically</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={reportSettings.autoExport}
+                        onChange={(e) => setReportSettings(prev => ({ ...prev, autoExport: e.target.checked }))}
+                        className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label>Auto-export on Save</Label>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Export report when saving changes</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={reportSettings.autoExportOnSave}
+                        onChange={(e) => setReportSettings(prev => ({ ...prev, autoExportOnSave: e.target.checked }))}
+                        className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {settingsTab === 'Notifications' && (
+              <div className="space-y-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Notification Settings</h2>
+
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label>Enable Notifications</Label>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Show notifications for important events</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={notificationSettings.enabled}
+                        onChange={(e) => setNotificationSettings(prev => ({ ...prev, enabled: e.target.checked }))}
+                        className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label>Notification Sound</Label>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Play sound when notifications appear</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={notificationSettings.sound}
+                        onChange={(e) => setNotificationSettings(prev => ({ ...prev, sound: e.target.checked }))}
+                        className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
+                      />
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label>Notification Duration (ms)</Label>
+                      <Input
+                        type="number"
+                        min="1000"
+                        max="10000"
+                        step="500"
+                        value={notificationSettings.duration}
+                        onChange={(e) => setNotificationSettings(prev => ({
+                          ...prev,
+                          duration: parseInt(e.target.value)
+                        }))}
+                        className="bg-gray-50 dark:bg-gray-900"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label>Goals Achievement Notifications</Label>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Notify when goals are achieved</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={notificationSettings.goalsAchievement}
+                        onChange={(e) => setNotificationSettings(prev => ({ ...prev, goalsAchievement: e.target.checked }))}
+                        className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {settingsTab === 'Backup' && (
+              <div className="space-y-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Backup Settings</h2>
+
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label>Auto-backup</Label>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Automatically backup data periodically</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={backupSettings.autoBackup}
+                        onChange={(e) => setBackupSettings(prev => ({ ...prev, autoBackup: e.target.checked }))}
+                        className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
+                      />
+                    </div>
+
+                    {backupSettings.autoBackup && (
+                      <div className="space-y-4">
+                        <Label>Backup Frequency (hours)</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="168"
+                          value={backupSettings.backupFrequency}
+                          onChange={(e) => setBackupSettings(prev => ({
+                            ...prev,
+                            backupFrequency: parseInt(e.target.value)
+                          }))}
+                          className="bg-gray-50 dark:bg-gray-900"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-4">
+                      <Label>Backup Retention Period (days)</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="365"
+                        value={backupSettings.retentionPeriod}
+                        onChange={(e) => setBackupSettings(prev => ({
+                          ...prev,
+                          retentionPeriod: parseInt(e.target.value)
+                        }))}
+                        className="bg-gray-50 dark:bg-gray-900"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label>Encrypt Backups</Label>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Encrypt backup files for security</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={backupSettings.encryptBackups}
+                        onChange={(e) => setBackupSettings(prev => ({ ...prev, encryptBackups: e.target.checked }))}
+                        className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
+                      />
                     </div>
                   </div>
                 </div>
