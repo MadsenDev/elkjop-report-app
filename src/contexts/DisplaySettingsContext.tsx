@@ -48,12 +48,12 @@ export function DisplaySettingsProvider({ children }: { children: ReactNode }) {
     return storeSettings || defaultSettings;
   });
 
+  // Only update local state from store settings on mount
   useEffect(() => {
-    // Update local state when store settings change
     if (storeSettings) {
       setSettings(storeSettings);
     }
-  }, [storeSettings]);
+  }, []); // Empty dependency array means this only runs on mount
 
   const updateSettings = async (newSettings: Partial<DisplaySettings>) => {
     const updatedSettings = { ...settings, ...newSettings };

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import useReportStore from './store';
 import Layout from './components/Layout';
+import CompactLayout from './components/CompactLayout';
 import DaySummary from './components/DaySummary';
 import AVSSection from './components/AVSSection';
 import InsuranceAgreementSection from './components/TrygghetsavtaleSection';
@@ -90,28 +91,35 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-[background-color,color,border-color] duration-500 ease-in-out">
-      <Layout
-        selectedDay={selectedDay}
-        onDayChange={setSelectedDay}
-      >
-        <div className="space-y-8 transition-[background-color,color,border-color] duration-500 ease-in-out">
-          <DaySummary day={selectedDay} />
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 transition-[background-color,color,border-color] duration-500 ease-in-out">
-            {displaySettings.showSections.avs && (
-              <AVSSection day={selectedDay} />
-            )}
-            {displaySettings.showSections.insurance && (
-              <InsuranceAgreementSection day={selectedDay} />
-            )}
-            {displaySettings.showSections.precalibrated && (
-              <PreklargjortTVSection day={selectedDay} />
-            )}
-            {displaySettings.showSections.repair && (
-              <RepairTicketsSection day={selectedDay} />
-            )}
+      {displaySettings.compactView ? (
+        <CompactLayout 
+          selectedDay={selectedDay}
+          onDayChange={setSelectedDay}
+        />
+      ) : (
+        <Layout
+          selectedDay={selectedDay}
+          onDayChange={setSelectedDay}
+        >
+          <div className="space-y-8 transition-[background-color,color,border-color] duration-500 ease-in-out">
+            <DaySummary day={selectedDay} />
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 transition-[background-color,color,border-color] duration-500 ease-in-out">
+              {displaySettings.showSections.avs && (
+                <AVSSection day={selectedDay} />
+              )}
+              {displaySettings.showSections.insurance && (
+                <InsuranceAgreementSection day={selectedDay} />
+              )}
+              {displaySettings.showSections.precalibrated && (
+                <PreklargjortTVSection day={selectedDay} />
+              )}
+              {displaySettings.showSections.repair && (
+                <RepairTicketsSection day={selectedDay} />
+              )}
+            </div>
           </div>
-        </div>
-      </Layout>
+        </Layout>
+      )}
     </div>
   );
 }
