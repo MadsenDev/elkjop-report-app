@@ -182,7 +182,7 @@ export default function AVSSection({ day }: AVSSectionProps) {
                           onClick={() => handleEdit(service.index)}
                           className="cursor-pointer hover:opacity-80 transition-opacity"
                         >
-                          <span>{serviceDetails?.name} ({formatCurrency(service.gm)})</span>
+                          <span>{serviceDetails?.id} ({formatCurrency(service.gm)})</span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();

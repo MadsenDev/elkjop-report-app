@@ -8,15 +8,16 @@ import PreklargjortTVSection from './components/PreklargjortTVSection';
 import RepairTicketsSection from './components/RepairTicketsSection';
 import LoadingScreen from './components/LoadingScreen';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { DisplaySettingsProvider } from './contexts/DisplaySettingsContext';
+import { DisplaySettingsProvider, useDisplaySettings } from './contexts/DisplaySettingsContext';
 import { ToastProvider } from './contexts/ToastContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import { VERSION } from './config/version';
+import { loadServices, loadPeople, loadGoals, loadWeekDates, loadAllData } from './store';
 
-export default function App() {
+function AppContent() {
   const selectedDay = useReportStore((state: any) => state.selectedDay);
   const setSelectedDay = useReportStore((state: any) => state.setSelectedDay);
-  const { loadServices, loadPeople, loadGoals } = useReportStore();
+  const { settings: displaySettings } = useDisplaySettings();
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -30,7 +31,7 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
 
-    const loadInitialData = async () => {
+    const loadData = async () => {
       try {
         setIsLoading(true);
         setLoadError(null);
@@ -38,7 +39,9 @@ export default function App() {
         await Promise.all([
           loadServices(),
           loadPeople(),
-          loadGoals()
+          loadGoals(),
+          loadWeekDates(),
+          loadAllData()
         ]);
         console.log('Initial data loaded successfully');
       } catch (error) {
@@ -50,7 +53,7 @@ export default function App() {
       }
     };
 
-    loadInitialData();
+    loadData();
 
     // Add keyboard shortcut to toggle loading screen (Ctrl/Cmd + L)
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -62,7 +65,7 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [loadServices, loadPeople, loadGoals]);
+  }, []);
 
   if (isLoading) {
     return <LoadingScreen version={VERSION} />;
@@ -86,26 +89,40 @@ export default function App() {
   }
 
   return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-[background-color,color,border-color] duration-500 ease-in-out">
+      <Layout
+        selectedDay={selectedDay}
+        onDayChange={setSelectedDay}
+      >
+        <div className="space-y-8 transition-[background-color,color,border-color] duration-500 ease-in-out">
+          <DaySummary day={selectedDay} />
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 transition-[background-color,color,border-color] duration-500 ease-in-out">
+            {displaySettings.showSections.avs && (
+              <AVSSection day={selectedDay} />
+            )}
+            {displaySettings.showSections.insurance && (
+              <InsuranceAgreementSection day={selectedDay} />
+            )}
+            {displaySettings.showSections.precalibrated && (
+              <PreklargjortTVSection day={selectedDay} />
+            )}
+            {displaySettings.showSections.repair && (
+              <RepairTicketsSection day={selectedDay} />
+            )}
+          </div>
+        </div>
+      </Layout>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
     <ErrorBoundary>
       <ThemeProvider>
         <DisplaySettingsProvider>
           <ToastProvider>
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-              <Layout
-                selectedDay={selectedDay}
-                onDayChange={setSelectedDay}
-              >
-                <div className="space-y-8">
-                  <DaySummary day={selectedDay} />
-                  <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-                    <AVSSection day={selectedDay} />
-                    <InsuranceAgreementSection day={selectedDay} />
-                    <PreklargjortTVSection day={selectedDay} />
-                    <RepairTicketsSection day={selectedDay} />
-                  </div>
-                </div>
-              </Layout>
-            </div>
+            <AppContent />
           </ToastProvider>
         </DisplaySettingsProvider>
       </ThemeProvider>

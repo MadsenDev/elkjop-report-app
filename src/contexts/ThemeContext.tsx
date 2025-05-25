@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import useReportStore from '../store';
 
 interface ThemeContextType {
   isDarkMode: boolean;
@@ -8,6 +9,8 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  const storeSettings = useReportStore(state => state.settings.theme);
+  const updateStoreSettings = useReportStore(state => state.updateSettings);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     // Check if user has a theme preference in localStorage
     const savedTheme = localStorage.getItem('theme');

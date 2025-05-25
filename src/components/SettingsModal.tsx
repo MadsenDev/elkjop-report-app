@@ -5,8 +5,10 @@ import Button from './ui/Button';
 import Label from './ui/Label';
 import { useDisplaySettings } from '../contexts/DisplaySettingsContext';
 import { useToast } from '../contexts/ToastContext';
-import useReportStore, { loadServices, loadPeople, loadGoals } from '../store';
+import useReportStore, { loadServices, loadPeople, loadGoals, loadAllData, loadAvailableWeeks, loadSettings, loadWeekDates } from '../store';
 import { db } from '../services/db';
+import { VERSION } from '../config/version';
+import ResetLoadingScreen from './ResetLoadingScreen';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -81,6 +83,12 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { showToast } = useToast();
   const { settings: displaySettings, updateSettings: updateDisplaySettings } = useDisplaySettings();
   const { people: storePeople, services: storeServices, goals: storeGoals, loadPeople, loadServices, loadGoals } = useReportStore();
+  const storeSettings = useReportStore(state => state.settings);
+  const updateStoreSettings = useReportStore(state => state.updateSettings);
+  const [isDeletingAllData, setIsDeletingAllData] = useState(false);
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [modalConfirmAction, setModalConfirmAction] = useState<(() => Promise<void>) | null>(null);
 
   // Local state for editing
   const [people, setPeople] = useState(storePeople);
@@ -99,7 +107,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     People: true,
     Services: true,
     Goals: true,
-    Display: false,
+    Display: true,
     Theme: false,
     Data: true,
     Report: false,
@@ -109,91 +117,85 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   };
 
   // Theme Settings
-  const [themeSettings, setThemeSettings] = useState<ThemeSettings>(() => {
-    const saved = localStorage.getItem('themeSettings');
-    return saved ? JSON.parse(saved) : {
-      fontSize: 'medium',
-      animationSpeed: 'normal',
-      accentColors: {
-        avs: 'blue',
-        insurance: 'green',
-        precalibrated: 'purple',
-        repair: 'orange',
-        summary: 'indigo'
-      }
-    };
+  const [themeSettings, setThemeSettings] = useState(() => storeSettings?.theme || {
+    fontSize: 'medium',
+    animationSpeed: 'normal',
+    accentColors: {
+      avs: 'blue',
+      insurance: 'green',
+      precalibrated: 'purple',
+      repair: 'orange',
+      summary: 'indigo'
+    }
   });
 
   // Data Settings
-  const [dataSettings, setDataSettings] = useState<DataSettings>(() => {
-    const saved = localStorage.getItem('dataSettings');
-    return saved ? JSON.parse(saved) : {
-      autoSave: true,
-      autoSaveInterval: 5, // minutes
-      dataRetention: 30, // days
-      defaultValues: {
-        serviceSold: 1,
-        repairTickets: 1,
-        precalibratedTVs: 1,
-        insuranceAgreements: 1
-      }
-    };
+  const [dataSettings, setDataSettings] = useState(() => storeSettings?.data || {
+    autoSave: true,
+    autoSaveInterval: 5,
+    dataRetention: 30,
+    defaultValues: {
+      serviceSold: 1,
+      repairTickets: 1,
+      precalibratedTVs: 1,
+      insuranceAgreements: 1
+    }
   });
 
   // Report Settings
-  const [reportSettings, setReportSettings] = useState<ReportSettings>(() => {
-    const saved = localStorage.getItem('reportSettings');
-    return saved ? JSON.parse(saved) : {
-      defaultFormat: 'png',
-      defaultQuality: 'high',
-      defaultSize: 'medium',
-      autoExport: false,
-      autoExportOnSave: false
-    };
+  const [reportSettings, setReportSettings] = useState(() => storeSettings?.report || {
+    defaultFormat: 'png',
+    defaultQuality: 'high',
+    defaultSize: 'medium',
+    autoExport: false,
+    autoExportOnSave: false
   });
 
   // Notification Settings
-  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(() => {
-    const saved = localStorage.getItem('notificationSettings');
-    return saved ? JSON.parse(saved) : {
-      enabled: true,
-      sound: true,
-      duration: 3000,
-      goalsAchievement: true
-    };
+  const [notificationSettings, setNotificationSettings] = useState(() => storeSettings?.notifications || {
+    enabled: true,
+    sound: true,
+    duration: 3000,
+    goalsAchievement: true
   });
 
   // Backup Settings
-  const [backupSettings, setBackupSettings] = useState<BackupSettings>(() => {
-    const saved = localStorage.getItem('backupSettings');
-    return saved ? JSON.parse(saved) : {
-      autoBackup: true,
-      backupFrequency: 24, // hours
-      retentionPeriod: 30, // days
-      encryptBackups: true
-    };
+  const [backupSettings, setBackupSettings] = useState(() => storeSettings?.backup || {
+    autoBackup: true,
+    backupFrequency: 24,
+    retentionPeriod: 30,
+    encryptBackups: true
   });
 
-  // Save settings to localStorage
+  // Update local settings when store settings change
   useEffect(() => {
-    localStorage.setItem('themeSettings', JSON.stringify(themeSettings));
-  }, [themeSettings]);
+    if (storeSettings?.theme) setThemeSettings(storeSettings.theme);
+    if (storeSettings?.data) setDataSettings(storeSettings.data);
+    if (storeSettings?.report) setReportSettings(storeSettings.report);
+    if (storeSettings?.notifications) setNotificationSettings(storeSettings.notifications);
+    if (storeSettings?.backup) setBackupSettings(storeSettings.backup);
+  }, [storeSettings]);
+
+  // Save settings to database
+  useEffect(() => {
+    updateStoreSettings({ theme: themeSettings });
+  }, [themeSettings, updateStoreSettings]);
 
   useEffect(() => {
-    localStorage.setItem('dataSettings', JSON.stringify(dataSettings));
-  }, [dataSettings]);
+    updateStoreSettings({ data: dataSettings });
+  }, [dataSettings, updateStoreSettings]);
 
   useEffect(() => {
-    localStorage.setItem('reportSettings', JSON.stringify(reportSettings));
-  }, [reportSettings]);
+    updateStoreSettings({ report: reportSettings });
+  }, [reportSettings, updateStoreSettings]);
 
   useEffect(() => {
-    localStorage.setItem('notificationSettings', JSON.stringify(notificationSettings));
-  }, [notificationSettings]);
+    updateStoreSettings({ notifications: notificationSettings });
+  }, [notificationSettings, updateStoreSettings]);
 
   useEffect(() => {
-    localStorage.setItem('backupSettings', JSON.stringify(backupSettings));
-  }, [backupSettings]);
+    updateStoreSettings({ backup: backupSettings });
+  }, [backupSettings, updateStoreSettings]);
 
   // Handlers for People
   const handlePersonChange = (idx: number, field: string, value: string) => {
@@ -316,14 +318,148 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   };
 
   const handleDeleteDatabase = async () => {
-    if (window.confirm('Are you sure you want to delete all data? This cannot be undone.')) {
-      try {
-        await db.deleteDatabase();
-        window.location.reload();
-      } catch (error) {
-        showToast('Failed to delete database', 'error');
-      }
+    setResetModalOpen(false);
+    setIsDeletingAllData(true);
+    try {
+      await db.deleteDatabase();
+      window.location.reload();
+    } catch (error) {
+      showToast('Failed to delete database', 'error');
+      setIsDeletingAllData(false);
     }
+  };
+
+  // Add settings management
+  const { settings, updateSettings } = useReportStore();
+
+  // Add these new handlers at the top of the component
+  const handleExportUserData = async () => {
+    try {
+      const data = await db.exportUserData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'elkjop-report-user-data.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('User data exported successfully', 'success');
+    } catch (error) {
+      showToast('Failed to export user data', 'error');
+    }
+  };
+
+  const handleImportUserData = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      await useReportStore.getState().importUserData(file);
+      await useReportStore.getState().loadAllData();
+      event.target.value = ''; // Reset the input
+    } catch (error) {
+      console.error('Error importing user data:', error);
+    }
+  };
+
+  const handleExportConfig = async () => {
+    try {
+      await useReportStore.getState().exportData();
+    } catch (error) {
+      console.error('Error exporting configuration:', error);
+    }
+  };
+
+  const handleImportConfig = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      await useReportStore.getState().importData(file);
+      await useReportStore.getState().loadAllData();
+      event.target.value = ''; // Reset the input
+    } catch (error) {
+      console.error('Error importing configuration:', error);
+    }
+  };
+
+  const handleResetUserData = async () => {
+    setResetModalOpen(false);
+    setIsDeletingAllData(true);
+    
+    try {
+      // Delete only user data while preserving services, goals, and people
+      await db.deleteUserData();
+      
+      // Reload all data
+      await Promise.all([
+        loadServices(),
+        loadPeople(),
+        loadGoals(),
+        loadWeekDates(),
+        loadAvailableWeeks(),
+        loadSettings(),
+        loadAllData()  // Add this to reload all weekly data
+      ]);
+
+      showToast('All user data has been reset successfully', 'success');
+    } catch (error) {
+      console.error('Error resetting user data:', error);
+      showToast('Failed to reset user data. Please try again.', 'error');
+    } finally {
+      setIsDeletingAllData(false);
+    }
+  };
+
+  const handleResetAllData = async () => {
+    setResetModalOpen(false);
+    setIsDeletingAllData(true);
+    
+    try {
+      // Delete everything including services, goals, and people
+      await db.deleteDatabase();
+      
+      // Reload all data
+      await Promise.all([
+        loadServices(),
+        loadPeople(),
+        loadGoals(),
+        loadWeekDates(),
+        loadAvailableWeeks(),
+        loadSettings(),
+        loadAllData()  // Add this to reload all weekly data
+      ]);
+
+      showToast('All data has been reset successfully', 'success');
+    } catch (error) {
+      console.error('Error resetting all data:', error);
+      showToast('Failed to reset data. Please try again.', 'error');
+    } finally {
+      setIsDeletingAllData(false);
+    }
+  };
+
+  // Handlers for settings changes
+  const handleThemeChange = (field: keyof typeof themeSettings, value: any) => {
+    setThemeSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleDataChange = (field: keyof typeof dataSettings, value: any) => {
+    setDataSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleReportChange = (field: keyof typeof reportSettings, value: any) => {
+    setReportSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleNotificationChange = (field: keyof typeof notificationSettings, value: any) => {
+    setNotificationSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleBackupChange = (field: keyof typeof backupSettings, value: any) => {
+    setBackupSettings(prev => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -469,9 +605,22 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                   <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {/* Column Headers */}
+                    <div className="p-4 grid grid-cols-12 gap-4 border-b border-gray-200 dark:border-gray-700">
+                      <div className="col-span-5">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Article</span>
+                      </div>
+                      <div className="col-span-3">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Price</span>
+                      </div>
+                      <div className="col-span-3">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Cost</span>
+                      </div>
+                    </div>
                     {services.map((service, idx) => (
                       <div key={idx} className="p-4 flex items-center gap-4">
-                        <div className="flex-1 grid grid-cols-4 gap-4">
+                        <div className="flex-1 grid grid-cols-12 gap-4">
+                          <div className="col-span-5">
                           <Input
                             type="text"
                             value={service.id}
@@ -479,13 +628,8 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             placeholder="ID"
                             className="bg-gray-50 dark:bg-gray-900"
                           />
-                          <Input
-                            type="text"
-                            value={service.name}
-                            onChange={(e) => handleServiceChange(idx, 'name', e.target.value)}
-                            placeholder="Name"
-                            className="bg-gray-50 dark:bg-gray-900"
-                          />
+                          </div>
+                          <div className="col-span-3">
                           <Input
                             type="number"
                             value={service.price}
@@ -493,6 +637,8 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             placeholder="Price"
                             className="bg-gray-50 dark:bg-gray-900"
                           />
+                          </div>
+                          <div className="col-span-3">
                           <Input
                             type="number"
                             value={service.cost}
@@ -500,6 +646,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             placeholder="Cost"
                             className="bg-gray-50 dark:bg-gray-900"
                           />
+                          </div>
                         </div>
                         <Button
                           onClick={() => handleDeleteService(idx)}
@@ -540,7 +687,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       <div key={sectionIdx} className="p-6">
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">{section.section}</h3>
                         <div className="grid grid-cols-3 gap-6">
-                          {section.goals.map((goal: number, goalIdx: number) => (
+                          {section.goals.slice(0, 6).map((goal: number, goalIdx: number) => (
                             <div key={goalIdx} className="space-y-2">
                               <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                 {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][goalIdx]}
@@ -567,6 +714,99 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                   <div className="space-y-6">
+                    {/* Configuration Data Export/Import */}
+                    <div className="space-y-4">
+                      <Label>Configuration Data</Label>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Export or import configuration data (services, people, goals)
+                      </p>
+                      <div className="flex gap-4">
+                        <Button
+                          onClick={handleExportConfig}
+                          color="blue"
+                          variant="outline"
+                          className="flex items-center gap-2"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Export Configuration
+                        </Button>
+                        <div>
+                          <input
+                            type="file"
+                            accept=".json"
+                            onChange={handleImportConfig}
+                            className="hidden"
+                            id="import-config"
+                          />
+                          <Button
+                            onClick={() => document.getElementById('import-config')?.click()}
+                            color="blue"
+                            variant="outline"
+                            className="flex items-center gap-2"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                            Import Configuration
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* User Data Export/Import */}
+                    <div className="space-y-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                      <Label>User Data</Label>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Export or import weekly records (sales, repairs, insurance agreements, etc.)
+                      </p>
+                      <div className="flex gap-4">
+                        <Button
+                          onClick={handleExportUserData}
+                          color="blue"
+                          variant="outline"
+                          className="flex items-center gap-2"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Export User Data
+                        </Button>
+                        <div>
+                          <input
+                            type="file"
+                            accept=".json"
+                            onChange={handleImportUserData}
+                            className="hidden"
+                            id="import-user-data"
+                          />
+                          <Button
+                            onClick={() => document.getElementById('import-user-data')?.click()}
+                            color="blue"
+                            variant="outline"
+                            className="flex items-center gap-2"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                            Import User Data
+                          </Button>
+                        </div>
+                        <Button
+                          onClick={() => setResetModalOpen(true)}
+                          variant="danger"
+                          className="flex items-center gap-2"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Reset User Data
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Existing settings */}
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <Label>Auto-save</Label>
@@ -575,7 +815,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       <input
                         type="checkbox"
                         checked={dataSettings.autoSave}
-                        onChange={(e) => setDataSettings(prev => ({ ...prev, autoSave: e.target.checked }))}
+                        onChange={(e) => handleDataChange('autoSave', e.target.checked)}
                         className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
                       />
                     </div>
@@ -588,10 +828,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           min="1"
                           max="60"
                           value={dataSettings.autoSaveInterval}
-                          onChange={(e) => setDataSettings(prev => ({
-                            ...prev,
-                            autoSaveInterval: parseInt(e.target.value)
-                          }))}
+                          onChange={(e) => handleDataChange('autoSaveInterval', parseInt(e.target.value))}
                           className="bg-gray-50 dark:bg-gray-900"
                         />
                       </div>
@@ -604,10 +841,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         min="1"
                         max="365"
                         value={dataSettings.dataRetention}
-                        onChange={(e) => setDataSettings(prev => ({
-                          ...prev,
-                          dataRetention: parseInt(e.target.value)
-                        }))}
+                        onChange={(e) => handleDataChange('dataRetention', parseInt(e.target.value))}
                         className="bg-gray-50 dark:bg-gray-900"
                       />
                     </div>
@@ -624,10 +858,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                               type="number"
                               min="0"
                               value={value}
-                              onChange={(e) => setDataSettings(prev => ({
-                                ...prev,
-                                defaultValues: { ...prev.defaultValues, [key]: parseInt(e.target.value) }
-                              }))}
+                              onChange={(e) => handleDataChange('defaultValues', { ...dataSettings.defaultValues, [key]: parseInt(e.target.value) })}
                               className="bg-gray-50 dark:bg-gray-900"
                             />
                           </div>
@@ -679,9 +910,14 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         <Button
                           variant="outline"
                           color="red"
-                          onClick={handleDeleteDatabase}
+                          onClick={() => {
+                            setResetModalOpen(true);
+                            // Set a flag to indicate this is a full reset
+                            setModalMessage("Are you sure you want to reset ALL data? This will delete everything including services, goals, and people. This action cannot be undone.");
+                            setModalConfirmAction(handleResetAllData);
+                          }}
                         >
-                          Delete All Data
+                          Reset All Data
                         </Button>
                       </div>
                     </div>
@@ -694,7 +930,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <div className="space-y-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Report Settings</h2>
 
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                   <div className="space-y-6">
                     <div className="space-y-4">
                       <Label>Default Export Format</Label>
@@ -703,7 +939,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           <input
                             type="radio"
                             checked={reportSettings.defaultFormat === 'png'}
-                            onChange={() => setReportSettings(prev => ({ ...prev, defaultFormat: 'png' }))}
+                            onChange={(e) => handleReportChange('defaultFormat', 'png')}
                             className="mr-2"
                           />
                           PNG
@@ -712,52 +948,52 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           <input
                             type="radio"
                             checked={reportSettings.defaultFormat === 'pdf'}
-                            onChange={() => setReportSettings(prev => ({ ...prev, defaultFormat: 'pdf' }))}
+                            onChange={(e) => handleReportChange('defaultFormat', 'pdf')}
                             className="mr-2"
                           />
                           PDF
                         </label>
                       </div>
-                    </div>
+                  </div>
 
                     <div className="space-y-4">
                       <Label>Default Quality</Label>
                       <select
                         value={reportSettings.defaultQuality}
-                        onChange={(e) => setReportSettings(prev => ({ ...prev, defaultQuality: e.target.value as 'low' | 'medium' | 'high' }))}
+                        onChange={(e) => handleReportChange('defaultQuality', e.target.value as 'low' | 'medium' | 'high')}
                         className="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
                       >
                         <option value="low">Low</option>
                         <option value="medium">Medium</option>
                         <option value="high">High</option>
                       </select>
-                    </div>
+                      </div>
 
                     <div className="space-y-4">
                       <Label>Default Size</Label>
                       <select
                         value={reportSettings.defaultSize}
-                        onChange={(e) => setReportSettings(prev => ({ ...prev, defaultSize: e.target.value as 'small' | 'medium' | 'large' }))}
+                        onChange={(e) => handleReportChange('defaultSize', e.target.value as 'small' | 'medium' | 'large')}
                         className="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
                       >
                         <option value="small">Small</option>
                         <option value="medium">Medium</option>
                         <option value="large">Large</option>
                       </select>
-                    </div>
+                      </div>
 
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <Label>Auto-export</Label>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Automatically export reports periodically</p>
-                      </div>
+                    </div>
                       <input
                         type="checkbox"
                         checked={reportSettings.autoExport}
-                        onChange={(e) => setReportSettings(prev => ({ ...prev, autoExport: e.target.checked }))}
+                        onChange={(e) => handleReportChange('autoExport', e.target.checked)}
                         className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
                       />
-                    </div>
+                  </div>
 
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
@@ -767,7 +1003,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       <input
                         type="checkbox"
                         checked={reportSettings.autoExportOnSave}
-                        onChange={(e) => setReportSettings(prev => ({ ...prev, autoExportOnSave: e.target.checked }))}
+                        onChange={(e) => handleReportChange('autoExportOnSave', e.target.checked)}
                         className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
                       />
                     </div>
@@ -780,7 +1016,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <div className="space-y-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Notification Settings</h2>
 
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
@@ -790,7 +1026,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       <input
                         type="checkbox"
                         checked={notificationSettings.enabled}
-                        onChange={(e) => setNotificationSettings(prev => ({ ...prev, enabled: e.target.checked }))}
+                        onChange={(e) => handleNotificationChange('enabled', e.target.checked)}
                         className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
                       />
                     </div>
@@ -803,7 +1039,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       <input
                         type="checkbox"
                         checked={notificationSettings.sound}
-                        onChange={(e) => setNotificationSettings(prev => ({ ...prev, sound: e.target.checked }))}
+                        onChange={(e) => handleNotificationChange('sound', e.target.checked)}
                         className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
                       />
                     </div>
@@ -816,13 +1052,10 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         max="10000"
                         step="500"
                         value={notificationSettings.duration}
-                        onChange={(e) => setNotificationSettings(prev => ({
-                          ...prev,
-                          duration: parseInt(e.target.value)
-                        }))}
+                        onChange={(e) => handleNotificationChange('duration', parseInt(e.target.value))}
                         className="bg-gray-50 dark:bg-gray-900"
                       />
-                    </div>
+                      </div>
 
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
@@ -832,7 +1065,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       <input
                         type="checkbox"
                         checked={notificationSettings.goalsAchievement}
-                        onChange={(e) => setNotificationSettings(prev => ({ ...prev, goalsAchievement: e.target.checked }))}
+                        onChange={(e) => handleNotificationChange('goalsAchievement', e.target.checked)}
                         className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
                       />
                     </div>
@@ -845,7 +1078,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <div className="space-y-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Backup Settings</h2>
 
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
@@ -855,23 +1088,20 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       <input
                         type="checkbox"
                         checked={backupSettings.autoBackup}
-                        onChange={(e) => setBackupSettings(prev => ({ ...prev, autoBackup: e.target.checked }))}
+                        onChange={(e) => handleBackupChange('autoBackup', e.target.checked)}
                         className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
                       />
                     </div>
 
                     {backupSettings.autoBackup && (
-                      <div className="space-y-4">
+                    <div className="space-y-4">
                         <Label>Backup Frequency (hours)</Label>
                         <Input
                           type="number"
                           min="1"
                           max="168"
                           value={backupSettings.backupFrequency}
-                          onChange={(e) => setBackupSettings(prev => ({
-                            ...prev,
-                            backupFrequency: parseInt(e.target.value)
-                          }))}
+                          onChange={(e) => handleBackupChange('backupFrequency', parseInt(e.target.value))}
                           className="bg-gray-50 dark:bg-gray-900"
                         />
                       </div>
@@ -884,10 +1114,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         min="1"
                         max="365"
                         value={backupSettings.retentionPeriod}
-                        onChange={(e) => setBackupSettings(prev => ({
-                          ...prev,
-                          retentionPeriod: parseInt(e.target.value)
-                        }))}
+                        onChange={(e) => handleBackupChange('retentionPeriod', parseInt(e.target.value))}
                         className="bg-gray-50 dark:bg-gray-900"
                       />
                     </div>
@@ -900,7 +1127,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       <input
                         type="checkbox"
                         checked={backupSettings.encryptBackups}
-                        onChange={(e) => setBackupSettings(prev => ({ ...prev, encryptBackups: e.target.checked }))}
+                        onChange={(e) => handleBackupChange('encryptBackups', e.target.checked)}
                         className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
                       />
                     </div>
@@ -910,86 +1137,292 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             )}
 
             {settingsTab === 'About' && (
-              <div className="space-y-6">
-                <div className="text-center">
-                  <img src="/elkjop_logo.png" alt="Elkjøp logo" className="h-20 mx-auto mb-6" />
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Elkjøp Report App</h2>
-                  <p className="text-gray-600 dark:text-gray-400 mt-2">Version 1.0.0</p>
-                </div>
+              <div className="relative">
+                {/* Main Content */}
+                <div className="relative">
+                  {/* Header with Logo */}
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="relative flex-shrink-0">
+                      <div className="absolute inset-0 bg-gradient-to-br from-elkjop-green/20 to-blue-500/20 rounded-lg blur-sm" />
+                      <img 
+                        src="/elkjop_logo.png" 
+                        alt="Elkjøp logo" 
+                        className="relative w-10 h-10 object-contain"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+                        Elkjøp Report App
+                      </h2>
+                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                        <span className="px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 font-medium">v{VERSION}</span>
+                        <span>Personal Project</span>
+                      </div>
+                    </div>
+                      <a 
+                        href="mailto:chris@madsens.dev" 
+                      className="flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-elkjop-green bg-elkjop-green/5 hover:bg-elkjop-green/10 rounded-lg transition-colors"
+                      >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      Contact
+                      </a>
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">About the App</h3>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      The Elkjøp Report App is a specialized tool designed for the aftersales operations team to generate daily and weekly reports. 
-                      It provides a streamlined interface for creating and exporting reports that track key metrics such as service sales, repair tickets, 
+                  {/* Description */}
+                  <div className="mb-6 p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                      A specialized tool designed for the aftersales operations team to generate daily and weekly reports. 
+                      Streamlining your workflow with an intuitive interface for tracking service sales, repair tickets, 
                       precalibrated TVs, and insurance agreements.
                     </p>
                   </div>
 
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Key Features</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">Report Generation</h4>
-                        <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-1">
-                          <li>Daily report compilation</li>
-                          <li>Weekly report summaries</li>
-                          <li>Image export for chat sharing</li>
-                          <li>Clean, professional layout</li>
-                        </ul>
+                  {/* Features */}
+                  <div className="space-y-3">
+                    {/* Report Generation */}
+                    <div className="group">
+                      <div className="relative p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-elkjop-green/50 dark:hover:border-elkjop-green/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-shrink-0 p-2 rounded-md bg-gradient-to-br from-elkjop-green/10 to-blue-500/10">
+                            <svg className="w-4 h-4 text-elkjop-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-medium text-gray-900 dark:text-white">Report Generation</h3>
+                            <div className="mt-1 flex flex-wrap gap-2">
+                              {['Daily reports', 'Weekly summaries', 'Image export'].map((feature) => (
+                                <span key={feature} className="inline-flex items-center text-xs text-gray-500 dark:text-gray-400">
+                                  <svg className="w-3 h-3 mr-1 text-elkjop-green flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  {feature}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">Data Management</h4>
-                        <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-1">
-                          <li>Service sales tracking</li>
-                          <li>Repair ticket management</li>
-                          <li>Precalibrated TV monitoring</li>
-                          <li>Insurance agreement tracking</li>
-                        </ul>
+                    </div>
+
+                    {/* Data Management */}
+                    <div className="group">
+                      <div className="relative p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-elkjop-green/50 dark:hover:border-elkjop-green/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-shrink-0 p-2 rounded-md bg-gradient-to-br from-elkjop-green/10 to-blue-500/10">
+                            <svg className="w-4 h-4 text-elkjop-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-medium text-gray-900 dark:text-white">Data Management</h3>
+                            <div className="mt-1 flex flex-wrap gap-2">
+                              {['Service tracking', 'Repair tickets', 'Insurance tracking'].map((feature) => (
+                                <span key={feature} className="inline-flex items-center text-xs text-gray-500 dark:text-gray-400">
+                                  <svg className="w-3 h-3 mr-1 text-elkjop-green flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  {feature}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Technical Stack */}
+                    <div className="group">
+                      <div className="relative p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-elkjop-green/50 dark:hover:border-elkjop-green/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-shrink-0 p-2 rounded-md bg-gradient-to-br from-elkjop-green/10 to-blue-500/10">
+                            <svg className="w-4 h-4 text-elkjop-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-medium text-gray-900 dark:text-white">Technical Stack</h3>
+                            <div className="mt-1 flex flex-wrap gap-2">
+                              {['React + TypeScript', 'Tauri', 'Tailwind CSS'].map((tech) => (
+                                <span key={tech} className="inline-flex items-center text-xs text-gray-500 dark:text-gray-400">
+                                  <svg className="w-3 h-3 mr-1 text-elkjop-green flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  {tech}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Statistics */}
+                    <div className="group">
+                      <div className="relative p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-elkjop-green/50 dark:hover:border-elkjop-green/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-shrink-0 p-2 rounded-md bg-gradient-to-br from-elkjop-green/10 to-blue-500/10">
+                            <svg className="w-4 h-4 text-elkjop-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-medium text-gray-900 dark:text-white">Statistics</h3>
+                            <div className="mt-1 flex flex-wrap gap-2">
+                              {['98.5% TypeScript', 'Personal Project', 'All Rights Reserved'].map((stat) => (
+                                <span key={stat} className="inline-flex items-center text-xs text-gray-500 dark:text-gray-400">
+                                  <svg className="w-3 h-3 mr-1 text-elkjop-green flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  {stat}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Technical Details</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">Built With</h4>
-                        <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-1">
-                          <li>React + TypeScript</li>
-                          <li>Tauri for desktop app</li>
-                          <li>Tailwind CSS for styling</li>
-                          <li>Framer Motion for animations</li>
-                        </ul>
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">Statistics</h4>
-                        <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-1">
-                          <li>98.5% TypeScript</li>
-                          <li>1.5% Other</li>
-                          <li>All Rights Reserved</li>
-                          <li>Personal Project</li>
-                        </ul>
-                      </div>
+                  {/* Footer */}
+                  <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                      <span>Created by Christoffer Madsen</span>
+                      <span>© {new Date().getFullYear()}</span>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
 
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Contact</h3>
+            {settingsTab === 'Display' && (
+              <div className="space-y-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Display Settings</h2>
+
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                  <div className="space-y-6">
+                    {/* Week Display Settings */}
                     <div className="space-y-4">
-                      <p className="text-gray-600 dark:text-gray-400">
-                        Created by Christoffer Madsen, a developer focused on creating efficient tools for the aftersales operations team.
-                      </p>
-                      <a 
-                        href="mailto:chris@madsens.dev" 
-                        className="flex items-center text-elkjop-green hover:text-elkjop-green-dark"
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">Week Display</h3>
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <Label>Show All Weeks</Label>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Display all weeks of the current year, even if they don't contain data
+                          </p>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={settings.showAllWeeks}
+                          onChange={(e) => updateSettings({ ...settings, showAllWeeks: e.target.checked })}
+                          className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Existing Display Settings */}
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label>Compact View</Label>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Use a more compact layout for data display</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={displaySettings.compactView}
+                        onChange={(e) => updateDisplaySettings({ ...displaySettings, compactView: e.target.checked })}
+                        className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
+                      />
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label>Visible Sections</Label>
+                      <div className="grid grid-cols-2 gap-4">
+                        {Object.entries(displaySettings.showSections).map(([key, value]) => (
+                          <div key={key} className="flex items-center justify-between">
+                            <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">
+                              {key.replace(/([A-Z])/g, ' $1').trim()}
+                            </Label>
+                            <input
+                              type="checkbox"
+                              checked={value}
+                              onChange={(e) => updateDisplaySettings({
+                                ...displaySettings,
+                                showSections: {
+                                  ...displaySettings.showSections,
+                                  [key]: e.target.checked
+                                }
+                              })}
+                              className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label>Default Day</Label>
+                      <select
+                        value={displaySettings.defaultDay}
+                        onChange={(e) => updateDisplaySettings({
+                          ...displaySettings,
+                          defaultDay: e.target.value as DisplaySettings['defaultDay']
+                        })}
+                        className="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
                       >
-                        <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M0 3v18h24v-18h-24zm21.518 2l-9.518 7.713-9.518-7.713h19.036zm-19.518 14v-11.817l10 8.104 10-8.104v11.817h-20z"/>
-                        </svg>
-                        chris@madsens.dev
-                      </a>
+                        <option value="current">Current Day</option>
+                        <option value="monday">Monday</option>
+                        <option value="tuesday">Tuesday</option>
+                        <option value="wednesday">Wednesday</option>
+                        <option value="thursday">Thursday</option>
+                        <option value="friday">Friday</option>
+                        <option value="saturday">Saturday</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label>Number Format</Label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Currency Decimals
+                          </Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="4"
+                            value={displaySettings.numberFormat.currencyDecimals}
+                            onChange={(e) => updateDisplaySettings({
+                              ...displaySettings,
+                              numberFormat: {
+                                ...displaySettings.numberFormat,
+                                currencyDecimals: parseInt(e.target.value)
+                              }
+                            })}
+                            className="bg-gray-50 dark:bg-gray-900"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Number Decimals
+                          </Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="4"
+                            value={displaySettings.numberFormat.numberDecimals}
+                            onChange={(e) => updateDisplaySettings({
+                              ...displaySettings,
+                              numberFormat: {
+                                ...displaySettings.numberFormat,
+                                numberDecimals: parseInt(e.target.value)
+                              }
+                            })}
+                            className="bg-gray-50 dark:bg-gray-900"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -998,6 +1431,20 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
         </div>
       </div>
+
+      {/* Add Reset Confirmation Modal */}
+      <Modal
+        isOpen={resetModalOpen}
+        onClose={() => setResetModalOpen(false)}
+        title="Reset Data"
+        message={modalMessage || "Are you sure you want to reset all data? This will delete all weekly records, including sales, repairs, insurance agreements, and more. This action cannot be undone."}
+        onConfirm={modalConfirmAction || handleResetUserData}
+        confirmText="Reset Data"
+        cancelText="Cancel"
+      />
+
+      {/* Add Reset Loading Screen */}
+      <ResetLoadingScreen isOpen={isDeletingAllData} />
     </Modal>
   );
 } 

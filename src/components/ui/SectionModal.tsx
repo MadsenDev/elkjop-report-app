@@ -16,10 +16,10 @@ interface Props {
 }
 
 const palette = {
-  blue:   { ring: 'ring-blue-500',   grad: 'from-blue-50 to-blue-100 dark:from-blue-900/40 dark:to-blue-800/40' },
-  green:  { ring: 'ring-green-500',  grad: 'from-green-50 to-green-100 dark:from-green-900/40 dark:to-green-800/40' },
-  orange: { ring: 'ring-orange-500', grad: 'from-orange-50 to-orange-100 dark:from-orange-900/40 dark:to-orange-800/40' },
-  purple: { ring: 'ring-purple-500', grad: 'from-purple-50 to-purple-100 dark:from-purple-900/40 dark:to-purple-800/40' },
+  blue:   { ring: 'ring-blue-500',   grad: 'from-blue-50 to-blue-100 dark:from-blue-900/60 dark:to-blue-800/90' },
+  green:  { ring: 'ring-green-500',  grad: 'from-green-50 to-green-100 dark:from-green-900/60 dark:to-green-800/90' },
+  orange: { ring: 'ring-orange-500', grad: 'from-orange-50 to-orange-100 dark:from-orange-900/60 dark:to-orange-800/90' },
+  purple: { ring: 'ring-purple-500', grad: 'from-purple-50 to-purple-100 dark:from-purple-900/60 dark:to-purple-800/90' },
 } as const;
 
 export default function SectionModal({

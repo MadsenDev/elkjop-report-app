@@ -4,7 +4,6 @@ import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid';
 
 interface Service {
   id: string;
-  name: string;
   price: number;
 }
 
@@ -22,7 +21,7 @@ export default function ServiceSelect({ value, onChange, label = 'Select Service
     query === ''
       ? services
       : services.filter((service) =>
-          `${service.name} ${service.id}`
+          service.id
             .toLowerCase()
             .replace(/\s+/g, '')
             .includes(query.toLowerCase().replace(/\s+/g, ''))
@@ -37,7 +36,7 @@ export default function ServiceSelect({ value, onChange, label = 'Select Service
               className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 dark:text-white focus:ring-0 bg-transparent"
               displayValue={(value: string) => {
                 const service = services.find((s) => s.id === value);
-                return service ? `${service.name} (${service.price} kr)` : '';
+                return service ? `${service.id} (${service.price} kr)` : '';
               }}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={label}
@@ -72,7 +71,7 @@ export default function ServiceSelect({ value, onChange, label = 'Select Service
                     {({ selected, active }) => (
                       <>
                         <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
-                          {service.name} ({service.price} kr)
+                          {service.id} ({service.price} kr)
                         </span>
                         {selected ? (
                           <span

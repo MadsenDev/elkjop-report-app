@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, StyleSheet, Svg, Path, Image } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Svg, Path, Image, Line } from '@react-pdf/renderer';
 import { Day } from '../types';
 import { formatCurrency } from '../utils/format';
 
@@ -12,7 +12,7 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 15,
-    borderBottom: '1 solid #e5e7eb',
+    borderBottom: '1 solid #1e40af',
     paddingBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1e293b',
+    color: '#1e40af',
     marginBottom: 2
   },
   subtitle: {
@@ -36,17 +36,17 @@ const styles = StyleSheet.create({
     color: '#64748b'
   },
   section: {
-    marginBottom: 15,
+    marginBottom: 12,
     backgroundColor: '#ffffff',
-    borderRadius: 4,
+    borderRadius: 6,
     padding: 10,
-    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+    boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#1e293b',
-    marginBottom: 10,
+    color: '#1e40af',
+    marginBottom: 8,
     borderBottom: '1 solid #3b82f6',
     paddingBottom: 4
   },
@@ -62,8 +62,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#f8fafc',
     padding: 8,
-    borderRadius: 4,
-    marginBottom: 8,
+    borderRadius: 6,
+    marginBottom: 6,
     border: '1 solid #e2e8f0'
   },
   cardTitle: {
@@ -75,13 +75,44 @@ const styles = StyleSheet.create({
   cardValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#1e293b',
+    color: '#1e40af',
     marginBottom: 2
   },
   cardGoal: {
-    fontSize: 9,
+    fontSize: 8,
     color: '#64748b',
     marginBottom: 4
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 2,
+    marginTop: 4,
+    overflow: 'hidden'
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#3b82f6',
+    borderRadius: 2
+  },
+  chart: {
+    height: 150,
+    marginVertical: 10,
+    backgroundColor: '#f8fafc',
+    padding: 10,
+    borderRadius: 6,
+    border: '1 solid #e2e8f0'
+  },
+  chartBar: {
+    width: 25,
+    backgroundColor: '#3b82f6',
+    marginHorizontal: 3
+  },
+  chartLabel: {
+    fontSize: 8,
+    color: '#64748b',
+    textAlign: 'center',
+    marginTop: 2
   },
   table: {
     display: 'flex',
@@ -100,8 +131,8 @@ const styles = StyleSheet.create({
     minHeight: 24
   },
   tableHeader: {
-    backgroundColor: '#f1f5f9',
-    fontWeight: 'bold'
+    backgroundColor: '#1e40af',
+    color: '#ffffff'
   },
   tableCell: {
     padding: 4,
@@ -109,63 +140,38 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'left'
   },
-  chart: {
-    height: 120,
-    marginVertical: 10,
-    backgroundColor: '#f8fafc',
-    padding: 10,
-    borderRadius: 4
-  },
-  chartBar: {
-    width: 20,
-    backgroundColor: '#3b82f6',
-    marginHorizontal: 3
-  },
-  chartLabel: {
+  headerCell: {
+    padding: 4,
     fontSize: 8,
-    color: '#64748b',
-    textAlign: 'center',
-    marginTop: 2
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: '#e2e8f0',
-    borderRadius: 2,
-    marginTop: 4,
-    overflow: 'hidden'
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#3b82f6',
-    borderRadius: 2
+    flex: 1,
+    textAlign: 'left',
+    color: '#ffffff',
+    fontWeight: 'bold'
   },
   sectionHeader: {
     backgroundColor: '#f1f5f9',
     padding: 4,
-    marginBottom: 8,
+    marginBottom: 6,
     borderRadius: 3,
-    borderLeft: '2 solid #3b82f6'
+    borderLeft: '2 solid #1e40af'
   },
   sectionHeaderText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: '#1e293b'
+    color: '#1e40af'
   },
-  metricLabel: {
-    fontSize: 8,
-    color: '#64748b',
-    marginBottom: 1
+  twoColumnLayout: {
+    flexDirection: 'row',
+    gap: 10
   },
-  metricValue: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#1e293b'
+  column: {
+    flex: 1
   },
   chartLegend: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 4,
-    gap: 12
+    gap: 10
   },
   legendItem: {
     flexDirection: 'row',
@@ -181,12 +187,30 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: '#64748b'
   },
-  twoColumnLayout: {
+  metricGrid: {
     flexDirection: 'row',
-    gap: 10
+    flexWrap: 'wrap',
+    marginHorizontal: -3
   },
-  column: {
-    flex: 1
+  metricItem: {
+    width: '25%',
+    padding: 3
+  },
+  metricCard: {
+    backgroundColor: '#f8fafc',
+    padding: 6,
+    borderRadius: 4,
+    border: '1 solid #e2e8f0'
+  },
+  metricLabel: {
+    fontSize: 8,
+    color: '#64748b',
+    marginBottom: 1
+  },
+  metricValue: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#1e40af'
   }
 });
 
@@ -295,41 +319,41 @@ export default function PDFReport({
         {/* Summary Stats */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Key Performance Indicators</Text>
-          <View style={styles.grid}>
-            <View style={styles.gridItem}>
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>Gross Margin</Text>
-                <Text style={styles.cardValue}>{formatCurrency(totalGM)}</Text>
+          <View style={styles.metricGrid}>
+            <View style={styles.metricItem}>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricLabel}>Gross Margin</Text>
+                <Text style={styles.metricValue}>{formatCurrency(totalGM)}</Text>
                 <Text style={styles.cardGoal}>Goal: {formatCurrency(gmGoal)}</Text>
                 <View style={styles.progressBar}>
                   <View style={[styles.progressFill, { width: `${Math.min(gmProgress, 100)}%` }]} />
                 </View>
               </View>
             </View>
-            <View style={styles.gridItem}>
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>Insurance Agreements</Text>
-                <Text style={styles.cardValue}>{totalTA}</Text>
+            <View style={styles.metricItem}>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricLabel}>Insurance Agreements</Text>
+                <Text style={styles.metricValue}>{totalTA}</Text>
                 <Text style={styles.cardGoal}>Goal: {taGoal}</Text>
                 <View style={styles.progressBar}>
                   <View style={[styles.progressFill, { width: `${Math.min(taProgress, 100)}%` }]} />
                 </View>
               </View>
             </View>
-            <View style={styles.gridItem}>
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>Precalibrated TVs</Text>
-                <Text style={styles.cardValue}>{totalTV}</Text>
+            <View style={styles.metricItem}>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricLabel}>Precalibrated TVs</Text>
+                <Text style={styles.metricValue}>{totalTV}</Text>
                 <Text style={styles.cardGoal}>Goal: {tvGoal}</Text>
                 <View style={styles.progressBar}>
                   <View style={[styles.progressFill, { width: `${Math.min(tvProgress, 100)}%` }]} />
                 </View>
               </View>
             </View>
-            <View style={styles.gridItem}>
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>Repair Tickets</Text>
-                <Text style={styles.cardValue}>{totalTickets}</Text>
+            <View style={styles.metricItem}>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricLabel}>Repair Tickets</Text>
+                <Text style={styles.metricValue}>{totalTickets}</Text>
                 <Text style={styles.cardGoal}>Goal: {ticketsGoal}</Text>
                 <View style={styles.progressBar}>
                   <View style={[styles.progressFill, { width: `${Math.min(ticketsProgress, 100)}%` }]} />
@@ -346,31 +370,46 @@ export default function PDFReport({
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Daily Performance</Text>
               <View style={styles.chart}>
-                <Svg height="120" width="250">
+                <Svg height="150" width="250">
+                  {/* Grid lines */}
+                  {[0, 37.5, 75, 112.5, 150].map((y, i) => (
+                    <Line
+                      key={i}
+                      x1="0"
+                      y1={y}
+                      x2="250"
+                      y2={y}
+                      stroke="#e2e8f0"
+                      strokeWidth="1"
+                    />
+                  ))}
+                  
                   {/* GM Line */}
                   <Path
-                    d={dailyData.map((d, i) => `${i === 0 ? 'M' : 'L'} ${i * 40 + 25} ${120 - (d.gm / Math.max(...dailyData.map(d => d.gm))) * 90}`).join(' ')}
-                    stroke="#3b82f6"
+                    d={dailyData.map((d, i) => `${i === 0 ? 'M' : 'L'} ${i * 40 + 25} ${150 - (d.gm / Math.max(...dailyData.map(d => d.gm))) * 112.5}`).join(' ')}
+                    stroke="#1e40af"
                     strokeWidth={2}
                     fill="none"
                   />
+                  
                   {/* AVS Line */}
                   <Path
-                    d={dailyData.map((d, i) => `${i === 0 ? 'M' : 'L'} ${i * 40 + 25} ${120 - (d.avs / Math.max(...dailyData.map(d => d.avs))) * 90}`).join(' ')}
+                    d={dailyData.map((d, i) => `${i === 0 ? 'M' : 'L'} ${i * 40 + 25} ${150 - (d.avs / Math.max(...dailyData.map(d => d.avs))) * 112.5}`).join(' ')}
                     stroke="#10b981"
                     strokeWidth={2}
                     fill="none"
                   />
+                  
                   {/* X-axis labels */}
                   {dailyData.map((d, i) => (
-                    <Text key={d.day} style={[styles.chartLabel, { position: 'absolute', left: i * 40 + 15, top: 125 }]}>
+                    <Text key={d.day} style={[styles.chartLabel, { position: 'absolute', left: i * 40 + 15, top: 155 }]}>
                       {d.day.slice(0, 3)}
                     </Text>
                   ))}
                 </Svg>
                 <View style={styles.chartLegend}>
                   <View style={styles.legendItem}>
-                    <View style={[styles.legendColor, { backgroundColor: '#3b82f6' }]} />
+                    <View style={[styles.legendColor, { backgroundColor: '#1e40af' }]} />
                     <Text style={styles.legendText}>Gross Margin</Text>
                   </View>
                   <View style={styles.legendItem}>
@@ -386,12 +425,12 @@ export default function PDFReport({
               <Text style={styles.sectionTitle}>Per Person Breakdown</Text>
               <View style={styles.table}>
                 <View style={[styles.tableRow, styles.tableHeader]}>
-                  <Text style={styles.tableCell}>Person</Text>
-                  <Text style={styles.tableCell}>GM</Text>
-                  <Text style={styles.tableCell}>AVS</Text>
-                  <Text style={styles.tableCell}>TA</Text>
-                  <Text style={styles.tableCell}>TV</Text>
-                  <Text style={styles.tableCell}>Tickets</Text>
+                  <Text style={styles.headerCell}>Person</Text>
+                  <Text style={styles.headerCell}>GM</Text>
+                  <Text style={styles.headerCell}>AVS</Text>
+                  <Text style={styles.headerCell}>TA</Text>
+                  <Text style={styles.headerCell}>TV</Text>
+                  <Text style={styles.headerCell}>Tickets</Text>
                 </View>
                 {perPerson.map(row => (
                   <View key={row.person} style={styles.tableRow}>
@@ -419,8 +458,8 @@ export default function PDFReport({
               </View>
               <View style={styles.table}>
                 <View style={[styles.tableRow, styles.tableHeader]}>
-                  <Text style={styles.tableCell}>Service</Text>
-                  <Text style={styles.tableCell}>Sold</Text>
+                  <Text style={styles.headerCell}>Service</Text>
+                  <Text style={styles.headerCell}>Sold</Text>
                 </View>
                 {(Object.entries(avsSection) as [string, number][]).map(([service, sold]) => (
                   <View key={service} style={styles.tableRow}>
@@ -431,13 +470,13 @@ export default function PDFReport({
               </View>
 
               {/* Insurance Agreements by Person */}
-              <View style={[styles.sectionHeader, { marginTop: 10 }]}>
+              <View style={[styles.sectionHeader, { marginTop: 15 }]}>
                 <Text style={styles.sectionHeaderText}>Insurance Agreements by Person</Text>
               </View>
               <View style={styles.table}>
                 <View style={[styles.tableRow, styles.tableHeader]}>
-                  <Text style={styles.tableCell}>Person</Text>
-                  <Text style={styles.tableCell}>Sold</Text>
+                  <Text style={styles.headerCell}>Person</Text>
+                  <Text style={styles.headerCell}>Sold</Text>
                 </View>
                 {(Object.entries(taSection) as [string, number][]).map(([person, sold]) => (
                   <View key={person} style={styles.tableRow}>
@@ -448,13 +487,13 @@ export default function PDFReport({
               </View>
 
               {/* Precalibrated TVs by Person */}
-              <View style={[styles.sectionHeader, { marginTop: 10 }]}>
+              <View style={[styles.sectionHeader, { marginTop: 15 }]}>
                 <Text style={styles.sectionHeaderText}>Precalibrated TVs by Person</Text>
               </View>
               <View style={styles.table}>
                 <View style={[styles.tableRow, styles.tableHeader]}>
-                  <Text style={styles.tableCell}>Person</Text>
-                  <Text style={styles.tableCell}>Completed</Text>
+                  <Text style={styles.headerCell}>Person</Text>
+                  <Text style={styles.headerCell}>Completed</Text>
                 </View>
                 {(Object.entries(tvSection) as [string, number][]).map(([person, completed]) => (
                   <View key={person} style={styles.tableRow}>
@@ -465,13 +504,13 @@ export default function PDFReport({
               </View>
 
               {/* Repair Tickets by Person */}
-              <View style={[styles.sectionHeader, { marginTop: 10 }]}>
+              <View style={[styles.sectionHeader, { marginTop: 15 }]}>
                 <Text style={styles.sectionHeaderText}>Repair Tickets by Person</Text>
               </View>
               <View style={styles.table}>
                 <View style={[styles.tableRow, styles.tableHeader]}>
-                  <Text style={styles.tableCell}>Person</Text>
-                  <Text style={styles.tableCell}>Completed</Text>
+                  <Text style={styles.headerCell}>Person</Text>
+                  <Text style={styles.headerCell}>Completed</Text>
                 </View>
                 {(Object.entries(ticketsSection) as [string, number][]).map(([person, completed]) => (
                   <View key={person} style={styles.tableRow}>

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import useReportStore from '../store';
 
 interface DisplaySettings {
   compactView: boolean;
@@ -13,12 +14,6 @@ interface DisplaySettings {
     currencyDecimals: number;
     numberDecimals: number;
   };
-}
-
-interface DisplaySettingsContextType {
-  settings: DisplaySettings;
-  updateSettings: (newSettings: Partial<DisplaySettings>) => void;
-  formatNumber: (value: number, isCurrency?: boolean) => string;
 }
 
 const defaultSettings: DisplaySettings = {
@@ -36,20 +31,34 @@ const defaultSettings: DisplaySettings = {
   }
 };
 
+interface DisplaySettingsContextType {
+  settings: DisplaySettings;
+  updateSettings: (settings: Partial<DisplaySettings>) => void;
+  formatNumber: (value: number, isCurrency?: boolean) => string;
+}
+
 const DisplaySettingsContext = createContext<DisplaySettingsContextType | undefined>(undefined);
 
 export function DisplaySettingsProvider({ children }: { children: ReactNode }) {
+  const storeSettings = useReportStore(state => state.settings.display);
+  const updateStoreSettings = useReportStore(state => state.updateSettings);
+
   const [settings, setSettings] = useState<DisplaySettings>(() => {
-    const saved = localStorage.getItem('displaySettings');
-    return saved ? JSON.parse(saved) : defaultSettings;
+    // Initialize with store settings if available, otherwise use defaults
+    return storeSettings || defaultSettings;
   });
 
   useEffect(() => {
-    localStorage.setItem('displaySettings', JSON.stringify(settings));
-  }, [settings]);
+    // Update local state when store settings change
+    if (storeSettings) {
+      setSettings(storeSettings);
+    }
+  }, [storeSettings]);
 
-  const updateSettings = (newSettings: Partial<DisplaySettings>) => {
-    setSettings(prev => ({ ...prev, ...newSettings }));
+  const updateSettings = async (newSettings: Partial<DisplaySettings>) => {
+    const updatedSettings = { ...settings, ...newSettings };
+    setSettings(updatedSettings);
+    await updateStoreSettings({ display: updatedSettings });
   };
 
   const formatNumber = (value: number, isCurrency = false) => {
