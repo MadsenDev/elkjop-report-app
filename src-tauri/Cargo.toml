@@ -1,6 +1,6 @@
 [package]
 name = "elkjop-report-app"
-version = "1.5.2"
+version = "1.6.1"
 description = "A Tauri App"
 authors = ["Christoffer Madsen"]
 license = ""

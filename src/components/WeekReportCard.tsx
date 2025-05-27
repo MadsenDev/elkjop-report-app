@@ -46,12 +46,8 @@ function StatCard({ color, icon, label, value, goal, isCurrency }: { color: stri
 }
 
 export default function WeekReportCard() {
-  const avsAssignments = useReportStore((state) => state.avsAssignments);
-  const insuranceAgreements = useReportStore((state) => state.insuranceAgreements);
-  const precalibratedTVs = useReportStore((state) => state.precalibratedTVs);
-  const repairTickets = useReportStore((state) => state.repairTickets);
+  const { avsAssignments, insuranceAgreements, precalibratedTVs, repairTickets, goals, settings, selectedWeek } = useReportStore();
   const qualityInspections = useReportStore((state) => state.qualityInspections);
-  const goals = useReportStore((state) => state.goals);
   const { settings: displaySettings } = useDisplaySettings();
 
   // Cumulative stats for the week
@@ -115,13 +111,18 @@ export default function WeekReportCard() {
   }, {} as Record<string, number>);
 
   return (
-    <div className="bg-white dark:bg-gray-800 px-4 sm:px-8 py-6 sm:py-8">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <span className="text-elkjop-blue dark:text-elkjop-green">
-          <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><path d="M7 7h10M7 11h6m-6 4h10M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </span>
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Weekly Report</h2>
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-gradient-to-br from-elkjop-green/10 to-blue-500/10">
+            <svg className="w-5 h-5 text-elkjop-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            Week {selectedWeek}
+          </h2>
+        </div>
       </div>
 
       {/* Summary Stats */}

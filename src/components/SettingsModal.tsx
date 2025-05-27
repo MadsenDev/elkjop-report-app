@@ -3,7 +3,6 @@ import Modal from './Modal';
 import Input from './ui/Input';
 import Button from './ui/Button';
 import Label from './ui/Label';
-import { useDisplaySettings } from '../contexts/DisplaySettingsContext';
 import { useToast } from '../contexts/ToastContext';
 import useReportStore, { loadServices, loadPeople, loadGoals, loadAllData, loadAvailableWeeks, loadSettings, loadWeekDates } from '../store';
 import { db } from '../services/db';
@@ -62,6 +61,10 @@ interface ReportSettings {
   defaultSize: 'small' | 'medium' | 'large';
   autoExport: boolean;
   autoExportOnSave: boolean;
+  titles: {
+    dayReport: string;
+    weekReport: string;
+  };
 }
 
 interface NotificationSettings {
@@ -69,15 +72,27 @@ interface NotificationSettings {
   sound: boolean;
   duration: number;
   goalsAchievement: boolean;
+  position: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center';
+  style: {
+    theme: 'light' | 'dark' | 'system';
+    animation: 'slide' | 'fade' | 'scale';
+    showProgress: boolean;
+  };
+  behavior: {
+    stack: boolean;
+    maxVisible: number;
+    pauseOnHover: boolean;
+    closeOnClick: boolean;
+    groupSimilar: boolean;
+  };
 }
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [settingsTab, setSettingsTab] = useState<SettingsTab>('About');
   const { showToast } = useToast();
-  const { settings: displaySettings, updateSettings: updateDisplaySettings } = useDisplaySettings();
-  const { people: storePeople, services: storeServices, goals: storeGoals, loadPeople, loadServices, loadGoals } = useReportStore();
   const storeSettings = useReportStore(state => state.settings);
   const updateStoreSettings = useReportStore(state => state.updateSettings);
+  const { people: storePeople, services: storeServices, goals: storeGoals, loadPeople, loadServices, loadGoals } = useReportStore();
   const [isDeletingAllData, setIsDeletingAllData] = useState(false);
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
@@ -103,8 +118,8 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     Display: true,
     Theme: false,
     Data: true,
-    Report: false,
-    Notifications: false,
+    Report: true,
+    Notifications: true,
     About: true
   };
 
@@ -140,15 +155,32 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     defaultQuality: 'high',
     defaultSize: 'medium',
     autoExport: false,
-    autoExportOnSave: false
+    autoExportOnSave: false,
+    titles: {
+      dayReport: '{day}',
+      weekReport: 'Week {week}'
+    }
   });
 
   // Notification Settings
-  const [notificationSettings, setNotificationSettings] = useState(() => storeSettings?.notifications || {
+  const [notificationSettings, setNotificationSettings] = useState({
     enabled: true,
     sound: true,
     duration: 3000,
-    goalsAchievement: true
+    goalsAchievement: true,
+    position: 'top-right' as const,
+    style: {
+      theme: 'system' as const,
+      animation: 'slide' as const,
+      showProgress: true
+    },
+    behavior: {
+      stack: true,
+      maxVisible: 3,
+      pauseOnHover: true,
+      closeOnClick: false,
+      groupSimilar: true
+    }
   });
 
   // Update local settings when store settings change
@@ -156,7 +188,6 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     if (storeSettings?.theme) setThemeSettings(storeSettings.theme);
     if (storeSettings?.data) setDataSettings(storeSettings.data);
     if (storeSettings?.report) setReportSettings(storeSettings.report);
-    if (storeSettings?.notifications) setNotificationSettings(storeSettings.notifications);
   }, [storeSettings]);
 
   // Save settings to database
@@ -433,8 +464,224 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     setReportSettings(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleNotificationChange = (field: keyof typeof notificationSettings, value: any) => {
-    setNotificationSettings(prev => ({ ...prev, [field]: value }));
+  const handleNotificationChange = (field: string, value: any) => {
+    if (field.includes('.')) {
+      const [parent, child] = field.split('.');
+      setNotificationSettings(prev => {
+        const newSettings = { ...prev };
+        if (parent === 'style') {
+          newSettings.style = { ...prev.style, [child]: value };
+        } else if (parent === 'behavior') {
+          newSettings.behavior = { ...prev.behavior, [child]: value };
+        }
+        return newSettings;
+      });
+    } else {
+      setNotificationSettings(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
+  const renderTabContent = () => {
+    if (settingsTab === 'Notifications') {
+      return (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Basic Settings</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>Enable Notifications</Label>
+                <Button
+                  variant={notificationSettings.enabled ? "primary" : "outline"}
+                  onClick={() => handleNotificationChange('enabled', !notificationSettings.enabled)}
+                >
+                  {notificationSettings.enabled ? "Enabled" : "Disabled"}
+                </Button>
+              </div>
+              <div className="flex items-center justify-between">
+                <Label>Sound Effects</Label>
+                <Button
+                  variant={notificationSettings.sound ? "primary" : "outline"}
+                  onClick={() => handleNotificationChange('sound', !notificationSettings.sound)}
+                >
+                  {notificationSettings.sound ? "Enabled" : "Disabled"}
+                </Button>
+              </div>
+              <div className="flex items-center justify-between">
+                <Label>Goals Achievement</Label>
+                <Button
+                  variant={notificationSettings.goalsAchievement ? "primary" : "outline"}
+                  onClick={() => handleNotificationChange('goalsAchievement', !notificationSettings.goalsAchievement)}
+                >
+                  {notificationSettings.goalsAchievement ? "Enabled" : "Disabled"}
+                </Button>
+              </div>
+              <div className="flex items-center justify-between">
+                <Label>Duration (ms)</Label>
+                <Input
+                  type="number"
+                  value={notificationSettings.duration}
+                  onChange={(e) => handleNotificationChange('duration', parseInt(e.target.value))}
+                  className="w-32"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Style Settings</h3>
+            <div className="space-y-4">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Theme
+                  </label>
+                  <select
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
+                    value={notificationSettings.style.theme}
+                    onChange={(e) => handleNotificationChange('style.theme', e.target.value)}
+                  >
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                    <option value="system">System</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Animation
+                  </label>
+                  <select
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
+                    value={notificationSettings.style.animation}
+                    onChange={(e) => handleNotificationChange('style.animation', e.target.value)}
+                  >
+                    <option value="slide">Slide</option>
+                    <option value="fade">Fade</option>
+                    <option value="scale">Scale</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                      checked={notificationSettings.style.showProgress}
+                      onChange={(e) => handleNotificationChange('style.showProgress', e.target.checked)}
+                    />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Show Progress Bar
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Behavior Settings</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>Stack Notifications</Label>
+                <Button
+                  variant={notificationSettings.behavior.stack ? "primary" : "outline"}
+                  onClick={() => handleNotificationChange('behavior.stack', !notificationSettings.behavior.stack)}
+                >
+                  {notificationSettings.behavior.stack ? "Enabled" : "Disabled"}
+                </Button>
+              </div>
+              <div className="flex items-center justify-between">
+                <Label>Max Visible</Label>
+                <Input
+                  type="number"
+                  value={notificationSettings.behavior.maxVisible}
+                  onChange={(e) => handleNotificationChange('behavior.maxVisible', parseInt(e.target.value))}
+                  className="w-32"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label>Pause on Hover</Label>
+                <Button
+                  variant={notificationSettings.behavior.pauseOnHover ? "primary" : "outline"}
+                  onClick={() => handleNotificationChange('behavior.pauseOnHover', !notificationSettings.behavior.pauseOnHover)}
+                >
+                  {notificationSettings.behavior.pauseOnHover ? "Enabled" : "Disabled"}
+                </Button>
+              </div>
+              <div className="flex items-center justify-between">
+                <Label>Close on Click</Label>
+                <Button
+                  variant={notificationSettings.behavior.closeOnClick ? "primary" : "outline"}
+                  onClick={() => handleNotificationChange('behavior.closeOnClick', !notificationSettings.behavior.closeOnClick)}
+                >
+                  {notificationSettings.behavior.closeOnClick ? "Enabled" : "Disabled"}
+                </Button>
+              </div>
+              <div className="flex items-center justify-between">
+                <Label>Group Similar</Label>
+                <Button
+                  variant={notificationSettings.behavior.groupSimilar ? "primary" : "outline"}
+                  onClick={() => handleNotificationChange('behavior.groupSimilar', !notificationSettings.behavior.groupSimilar)}
+                >
+                  {notificationSettings.behavior.groupSimilar ? "Enabled" : "Disabled"}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Position Settings</h3>
+            <div className="relative aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+              <div className="absolute inset-0 grid grid-cols-3 grid-rows-2">
+                {['top-left', 'top-center', 'top-right', 'bottom-left', 'bottom-center', 'bottom-right'].map((pos) => (
+                  <button
+                    key={pos}
+                    onClick={() => handleNotificationChange('position', pos)}
+                    className={`relative flex items-center justify-center p-4 transition-all duration-200 ${
+                      notificationSettings.position === pos
+                        ? 'bg-elkjop-green bg-opacity-10 border-2 border-elkjop-green'
+                        : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    <div className={`w-2 h-2 rounded-full ${
+                      notificationSettings.position === pos ? 'bg-elkjop-green' : 'bg-gray-400'
+                    }`} />
+                    <span className="absolute text-xs text-gray-500 dark:text-gray-400">
+                      {pos.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              {/* Preview notification */}
+              <div
+                className={`absolute w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 transition-all duration-300 ${
+                  notificationSettings.position.includes('top') ? 'top-4' : 'bottom-4'
+                } ${
+                  notificationSettings.position.includes('left') ? 'left-4' :
+                  notificationSettings.position.includes('right') ? 'right-4' :
+                  'left-1/2 -translate-x-1/2'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 rounded-full bg-elkjop-green" />
+                  <span className="text-sm font-medium">Example Notification</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border-t border-gray-200 dark:border-gray-700">
+            <Button
+              variant="outline"
+              onClick={() => showToast('This is a test notification', 'success')}
+              className="w-full"
+            >
+              Test Notification
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    // ... rest of the tabs ...
+    return null;
   };
 
   return (
@@ -905,8 +1152,38 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <div className="space-y-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Report Settings</h2>
 
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                   <div className="space-y-6">
+                    {/* Title Settings */}
+                    <div className="space-y-4">
+                      <Label>Report Titles</Label>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Day Report Title</Label>
+                          <Input
+                            type="text"
+                            value={reportSettings.titles.dayReport}
+                            onChange={(e) => handleReportChange('titles', { ...reportSettings.titles, dayReport: e.target.value })}
+                            placeholder="Use {day} for the day name"
+                            className="bg-gray-50 dark:bg-gray-900"
+                          />
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Available variables: {'{day}'}</p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Week Report Title</Label>
+                          <Input
+                            type="text"
+                            value={reportSettings.titles.weekReport}
+                            onChange={(e) => handleReportChange('titles', { ...reportSettings.titles, weekReport: e.target.value })}
+                            placeholder="Use {week} for the week number"
+                            className="bg-gray-50 dark:bg-gray-900"
+                          />
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Available variables: {'{week}'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Existing settings */}
                     <div className="space-y-4">
                       <Label>Default Export Format</Label>
                       <div className="flex gap-4">
@@ -929,7 +1206,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           PDF
                         </label>
                       </div>
-                  </div>
+                    </div>
 
                     <div className="space-y-4">
                       <Label>Default Quality</Label>
@@ -942,7 +1219,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         <option value="medium">Medium</option>
                         <option value="high">High</option>
                       </select>
-                      </div>
+                    </div>
 
                     <div className="space-y-4">
                       <Label>Default Size</Label>
@@ -955,7 +1232,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         <option value="medium">Medium</option>
                         <option value="large">Large</option>
                       </select>
-                      </div>
+                    </div>
 
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
@@ -987,67 +1264,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
             )}
 
-            {settingsTab === 'Notifications' && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Notification Settings</h2>
-
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <Label>Enable Notifications</Label>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Show notifications for important events</p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.enabled}
-                        onChange={(e) => handleNotificationChange('enabled', e.target.checked)}
-                        className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <Label>Notification Sound</Label>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Play sound when notifications appear</p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.sound}
-                        onChange={(e) => handleNotificationChange('sound', e.target.checked)}
-                        className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
-                      />
-                    </div>
-
-                    <div className="space-y-4">
-                      <Label>Notification Duration (ms)</Label>
-                      <Input
-                        type="number"
-                        min="1000"
-                        max="10000"
-                        step="500"
-                        value={notificationSettings.duration}
-                        onChange={(e) => handleNotificationChange('duration', parseInt(e.target.value))}
-                        className="bg-gray-50 dark:bg-gray-900"
-                      />
-                      </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <Label>Goals Achievement Notifications</Label>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Notify when goals are achieved</p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.goalsAchievement}
-                        onChange={(e) => handleNotificationChange('goalsAchievement', e.target.checked)}
-                        className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            {settingsTab === 'Notifications' && renderTabContent()}
 
             {settingsTab === 'About' && (
               <div className="relative">
@@ -1302,7 +1519,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       </div>
                     </div>
 
-                    {/* Existing Display Settings */}
+                    {/* Display Settings */}
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <Label>Compact View</Label>
@@ -1310,8 +1527,14 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       </div>
                       <input
                         type="checkbox"
-                        checked={displaySettings.compactView}
-                        onChange={(e) => updateDisplaySettings({ ...displaySettings, compactView: e.target.checked })}
+                        checked={settings.display.compactView}
+                        onChange={(e) => updateSettings({ 
+                          ...settings, 
+                          display: { 
+                            ...settings.display, 
+                            compactView: e.target.checked 
+                          } 
+                        })}
                         className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
                       />
                     </div>
@@ -1319,7 +1542,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <div className="space-y-4">
                       <Label>Visible Sections</Label>
                       <div className="grid grid-cols-2 gap-4">
-                        {Object.entries(displaySettings.showSections).map(([key, value]) => (
+                        {Object.entries(settings.display.showSections).map(([key, value]) => (
                           <div key={key} className="flex items-center justify-between">
                             <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">
                               {key.replace(/([A-Z])/g, ' $1').trim()}
@@ -1327,11 +1550,14 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             <input
                               type="checkbox"
                               checked={value}
-                              onChange={(e) => updateDisplaySettings({
-                                ...displaySettings,
-                                showSections: {
-                                  ...displaySettings.showSections,
-                                  [key]: e.target.checked
+                              onChange={(e) => updateSettings({
+                                ...settings,
+                                display: {
+                                  ...settings.display,
+                                  showSections: {
+                                    ...settings.display.showSections,
+                                    [key]: e.target.checked
+                                  }
                                 }
                               })}
                               className="rounded border-gray-300 text-elkjop-green focus:ring-elkjop-green"
@@ -1344,10 +1570,13 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <div className="space-y-4">
                       <Label>Default Day</Label>
                       <select
-                        value={displaySettings.defaultDay}
-                        onChange={(e) => updateDisplaySettings({
-                          ...displaySettings,
-                          defaultDay: e.target.value as DisplaySettings['defaultDay']
+                        value={settings.display.defaultDay}
+                        onChange={(e) => updateSettings({
+                          ...settings,
+                          display: {
+                            ...settings.display,
+                            defaultDay: e.target.value as DisplaySettings['defaultDay']
+                          }
                         })}
                         className="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
                       >
@@ -1372,12 +1601,15 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             type="number"
                             min="0"
                             max="4"
-                            value={displaySettings.numberFormat.currencyDecimals}
-                            onChange={(e) => updateDisplaySettings({
-                              ...displaySettings,
-                              numberFormat: {
-                                ...displaySettings.numberFormat,
-                                currencyDecimals: parseInt(e.target.value)
+                            value={settings.display.numberFormat.currencyDecimals}
+                            onChange={(e) => updateSettings({
+                              ...settings,
+                              display: {
+                                ...settings.display,
+                                numberFormat: {
+                                  ...settings.display.numberFormat,
+                                  currencyDecimals: parseInt(e.target.value)
+                                }
                               }
                             })}
                             className="bg-gray-50 dark:bg-gray-900"
@@ -1391,12 +1623,15 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             type="number"
                             min="0"
                             max="4"
-                            value={displaySettings.numberFormat.numberDecimals}
-                            onChange={(e) => updateDisplaySettings({
-                              ...displaySettings,
-                              numberFormat: {
-                                ...displaySettings.numberFormat,
-                                numberDecimals: parseInt(e.target.value)
+                            value={settings.display.numberFormat.numberDecimals}
+                            onChange={(e) => updateSettings({
+                              ...settings,
+                              display: {
+                                ...settings.display,
+                                numberFormat: {
+                                  ...settings.display.numberFormat,
+                                  numberDecimals: parseInt(e.target.value)
+                                }
                               }
                             })}
                             className="bg-gray-50 dark:bg-gray-900"

@@ -44,6 +44,7 @@ export default function Button({
         ${variantStyles[variant]}
         ${className}
       `}
+      style={{ fontSize: 'var(--font-size-base)' }}
       disabled={disabled || isLoading}
       {...props}
     >

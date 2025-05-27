@@ -38,6 +38,7 @@ export default function Avatar({
         justify-center
         ${className}
       `}
+      style={{ fontSize: 'var(--font-size-base)', color: 'var(--section-color)' }}
     >
       {src ? (
         <img

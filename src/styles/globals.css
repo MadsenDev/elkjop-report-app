@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Default theme values */
+  --font-size-base: 16px;
+  --animation-speed: 0.3s;
+  
+  /* Default accent colors */
+  --color-avs: #10B981;
+  --color-insurance: #3B82F6;
+  --color-tv: #8B5CF6;
+  --color-repair: #F97316;
+}
+
+/* Base styles */
+html {
+  font-size: var(--font-size-base);
+}
+
+/* Animation classes */
+.animate-fade {
+  animation: fade var(--animation-speed) ease-in-out;
+}
+
+.animate-slide {
+  animation: slide var(--animation-speed) ease-in-out;
+}
+
+/* Section-specific styles */
+.avs-section {
+  --section-color: var(--color-avs);
+}
+
+.insurance-section {
+  --section-color: var(--color-insurance);
+}
+
+.tv-section {
+  --section-color: var(--color-tv);
+}
+
+.repair-section {
+  --section-color: var(--color-repair);
+}
+
+/* Animations */
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Utility classes */
+.text-section {
+  color: var(--section-color);
+}
+
+.bg-section {
+  background-color: var(--section-color);
+}
+
+.border-section {
+  border-color: var(--section-color);
+}
+
+.hover\:bg-section:hover {
+  background-color: var(--section-color);
+}
+
+.hover\:text-section:hover {
+  color: var(--section-color);
+}
+
+/* ... existing styles ... */ 

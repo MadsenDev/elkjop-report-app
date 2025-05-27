@@ -38,6 +38,7 @@ export default function Badge({
         ${variantStyles[variant]}
         ${className}
       `}
+      style={{ fontSize: 'var(--font-size-base)', color: 'var(--section-color)' }}
     >
       {children}
     </span>

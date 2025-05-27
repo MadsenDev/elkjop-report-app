@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/schema.json",
   "productName": "elkjop-report-app",
-  "version": "1.5.2",
+  "version": "1.6.1",
   "identifier": "dev.madsens.elkjopreport",
   "build": {
     "beforeBuildCommand": "npm run build",

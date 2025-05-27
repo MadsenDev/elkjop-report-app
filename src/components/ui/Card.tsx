@@ -176,6 +176,7 @@ export function Button({
         ${variantStyles[variant]}
         ${className}
       `}
+      style={{ fontSize: 'var(--font-size-base)', color: 'var(--section-color)' }}
       disabled={disabled || isLoading}
       {...props}
     >

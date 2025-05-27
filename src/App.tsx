@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import useReportStore from './store';
 import Layout from './components/Layout';
-import CompactLayout from './components/CompactLayout';
 import DaySummary from './components/DaySummary';
 import AVSSection from './components/AVSSection';
 import InsuranceAgreementSection from './components/TrygghetsavtaleSection';
@@ -91,12 +90,6 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-[background-color,color,border-color] duration-500 ease-in-out">
-      {displaySettings.compactView ? (
-        <CompactLayout 
-          selectedDay={selectedDay}
-          onDayChange={setSelectedDay}
-        />
-      ) : (
         <Layout
           selectedDay={selectedDay}
           onDayChange={setSelectedDay}
@@ -119,7 +112,6 @@ function AppContent() {
             </div>
           </div>
         </Layout>
-      )}
     </div>
   );
 }

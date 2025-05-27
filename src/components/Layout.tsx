@@ -239,6 +239,59 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
     }
   }, [partyTimerRef.current]);
 
+  // Calculate progress for each day
+  const calculateDayProgress = (day: Day) => {
+    const avsAssignments = useReportStore.getState().avsAssignments;
+    const insuranceAgreements = useReportStore.getState().insuranceAgreements;
+    const precalibratedTVs = useReportStore.getState().precalibratedTVs;
+    const repairTickets = useReportStore.getState().repairTickets;
+    const goals = useReportStore.getState().goals;
+
+    const dayIdx = days.indexOf(day);
+    const daysUpTo = days.slice(0, dayIdx + 1);
+
+    // Calculate cumulative totals up to and including the selected day
+    const totalGM = avsAssignments
+      .filter((assignment) => daysUpTo.includes(assignment.day))
+      .reduce((sum, assignment) => sum + assignment.gm, 0);
+
+    const insuranceAgreementsTotal = insuranceAgreements
+      .filter((t) => daysUpTo.includes(t.day))
+      .reduce((sum, t) => sum + t.sold, 0);
+
+    const precalibratedTVsTotal = precalibratedTVs
+      .filter((p) => daysUpTo.includes(p.day))
+      .reduce((sum, p) => sum + p.completed, 0);
+
+    const repairTicketsTotal = repairTickets
+      .filter((r) => daysUpTo.includes(r.day))
+      .reduce((sum, r) => sum + r.completed, 0);
+
+    // Get goals for the day
+    const avsGoal = goals.find(g => g.section === 'AVS')?.goals[dayIdx] || 0;
+    const insuranceAgreementsGoal = goals.find(g => g.section === 'Insurance Agreements')?.goals[dayIdx] || 0;
+    const precalibratedTVsGoal = goals.find(g => g.section === 'Precalibrated TVs')?.goals[dayIdx] || 0;
+    const repairTicketsGoal = goals.find(g => g.section === 'RepairTickets')?.goals[dayIdx] || 0;
+
+    // Calculate progress for each section
+    const avsProgress = avsGoal ? totalGM / avsGoal : 0;
+    const insuranceAgreementsProgress = insuranceAgreementsGoal ? insuranceAgreementsTotal / insuranceAgreementsGoal : 0;
+    const precalibratedTVsProgress = precalibratedTVsGoal ? precalibratedTVsTotal / precalibratedTVsGoal : 0;
+    const repairTicketsProgress = repairTicketsGoal ? repairTicketsTotal / repairTicketsGoal : 0;
+
+    // Cap each section's progress at 1 (100%)
+    const cappedProgresses = [avsProgress, insuranceAgreementsProgress, precalibratedTVsProgress, repairTicketsProgress].map(p => Math.min(p, 1));
+    const allGoalsMet = [avsProgress, insuranceAgreementsProgress, precalibratedTVsProgress, repairTicketsProgress].every(p => p >= 1);
+
+    // Calculate daily progress
+    const dailyProgress = ((allGoalsMet
+      ? [avsProgress, insuranceAgreementsProgress, precalibratedTVsProgress, repairTicketsProgress]
+      : cappedProgresses
+    ).reduce((a, b) => a + b, 0) / 4) * 100;
+
+    return Math.round(dailyProgress);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-[background-color,color,border-color] duration-500 ease-in-out">
       <main>
@@ -434,24 +487,47 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
                           Navigation
                         </h2>
                       </div>
-                      {days.map((day) => (
-                        <button
-                          key={day}
-                          onClick={() => onDayChange(day)}
-                          className={`w-full px-4 py-3 text-left rounded-xl transition-all ${
-                            selectedDay === day
-                              ? 'bg-elkjop-green/10 text-elkjop-green font-semibold shadow-sm'
-                              : 'text-white hover:bg-elkjop-blue-dark'
-                          }`}
-                        >
-                          <div className="flex items-center space-x-3">
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <span>{day}</span>
-                          </div>
-                        </button>
-                      ))}
+                      {days.map((day) => {
+                        const progress = calculateDayProgress(day);
+                        const isGoalMet = progress >= 100;
+                        return (
+                          <button
+                            key={day}
+                            onClick={() => onDayChange(day)}
+                            className={`w-full px-4 py-3 text-left rounded-xl transition-all ${
+                              selectedDay === day
+                                ? 'bg-elkjop-green/10 text-elkjop-green font-semibold shadow-sm'
+                                : 'text-white hover:bg-elkjop-blue-dark'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span>{day}</span>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <div className="w-16 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full ${
+                                      isGoalMet
+                                        ? 'bg-gradient-to-r from-elkjop-green to-green-400'
+                                        : 'bg-elkjop-green'
+                                    }`}
+                                    style={{ width: `${Math.min(progress, 100)}%` }}
+                                  />
+                                </div>
+                                <span className={`text-xs font-medium ${
+                                  isGoalMet ? 'text-elkjop-green' : 'text-white/70'
+                                }`}>
+                                  {progress}%
+                                </span>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
                     </nav>
 
                     <div className="p-4 border-t border-elkjop-green/30 flex flex-col gap-4">

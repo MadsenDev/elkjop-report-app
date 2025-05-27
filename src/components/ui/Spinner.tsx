@@ -31,6 +31,7 @@ export default function Spinner({
         ${className}
         animate-spin
       `}
+      style={{ fontSize: 'var(--font-size-base)', color: 'var(--section-color)' }}
     >
       <svg
         className="w-full h-full"
