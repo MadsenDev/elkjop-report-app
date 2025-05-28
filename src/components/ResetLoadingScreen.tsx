@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import elkjopLogoWhite from '../assets/elkjop_logo_white.png';
 
 interface ResetLoadingScreenProps {
   isOpen: boolean;
@@ -16,7 +17,7 @@ export default function ResetLoadingScreen({ isOpen }: ResetLoadingScreenProps) 
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <img src="/elkjop_logo_white.png" alt="Elkjøp logo" className="h-20 mx-auto" />
+          <img src={elkjopLogoWhite} alt="Elkjøp logo" className="h-20 mx-auto" />
         </motion.div>
 
         <motion.h2

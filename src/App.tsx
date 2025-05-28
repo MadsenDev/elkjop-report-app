@@ -13,6 +13,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import { VERSION } from './config/version';
 import { loadServices, loadPeople, loadGoals, loadWeekDates, loadAllData } from './store';
+import TitleBar from './components/TitleBar';
 
 function AppContent() {
   const selectedDay = useReportStore((state: any) => state.selectedDay);
@@ -89,7 +90,9 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-[background-color,color,border-color] duration-500 ease-in-out">
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
+      <TitleBar />
+      <div className="flex-1 overflow-auto mt-12">
         <Layout
           selectedDay={selectedDay}
           onDayChange={setSelectedDay}
@@ -112,6 +115,7 @@ function AppContent() {
             </div>
           </div>
         </Layout>
+      </div>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import useReportStore, { loadServices, loadPeople, loadGoals, loadAllData, loadA
 import { db } from '../services/db';
 import { VERSION } from '../config/version';
 import ResetLoadingScreen from './ResetLoadingScreen';
+import elkjopLogo from '../assets/elkjop_logo.png';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -1275,7 +1276,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <div className="relative flex-shrink-0">
                       <div className="absolute inset-0 bg-gradient-to-br from-elkjop-green/20 to-blue-500/20 rounded-lg blur-sm" />
                       <img 
-                        src="/elkjop_logo.png" 
+                        src={elkjopLogo} 
                         alt="Elkjøp logo" 
                         className="relative w-10 h-10 object-contain"
                       />

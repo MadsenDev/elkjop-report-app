@@ -14,6 +14,7 @@ interface ModalProps {
   cancelText?: string;
   size?: 'sm' | 'md' | 'lg';
   noFooter?: boolean;
+  disableCountdownOnButtons?: boolean;
 }
 
 export default function Modal({
@@ -28,6 +29,7 @@ export default function Modal({
   cancelText = 'Cancel',
   size = 'md',
   noFooter = false,
+  disableCountdownOnButtons = false,
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -116,11 +118,11 @@ export default function Modal({
                 {onConfirm && (
                   <button
                     onClick={onConfirm}
-                    disabled={countdown !== undefined && countdown > 0}
+                    disabled={!disableCountdownOnButtons && countdown !== undefined && countdown > 0}
                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {confirmText}
-                    {countdown !== undefined && countdown > 0 && ` (${countdown}s)`}
+                    {!disableCountdownOnButtons && countdown !== undefined && countdown > 0 && ` (${countdown}s)`}
                   </button>
                 )}
               </div>

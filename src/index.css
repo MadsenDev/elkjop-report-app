@@ -1,3 +1,46 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --elkjop-blue: #0033a0;
+  --elkjop-green: #75BC26;
+  --elkjop-blue-dark: #002878;
+  --elkjop-green-dark: #5a8f1d;
+}
+
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--elkjop-green);
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--elkjop-green-dark);
+}
+
+/* Dark mode scrollbar - using same color but with opacity */
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--elkjop-green);
+  opacity: 0.8;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--elkjop-green) transparent;
+}
+
+.dark * {
+  scrollbar-color: var(--elkjop-green) transparent;
+}
