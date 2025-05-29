@@ -149,7 +149,7 @@ export default function DayReportCard({ day }: DayReportCardProps) {
               </svg>
             </div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              {day}
+              {settings.report.titles.dayReport.replace('{day}', day)}
             </h2>
           </div>
           {isGoalMet && (

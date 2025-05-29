@@ -91,8 +91,8 @@ export default function InsuranceAgreementSection({ day }: InsuranceAgreementSec
           setEditingIndex(null);
           setFormData({ person: '', sold: 1 });
           setIsModalOpen(true);
-        }} color="green">
-          Add Sale
+        }} color="green" aria-label="Add Sale">
+          +
         </Button>
       }
     >

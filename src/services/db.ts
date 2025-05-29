@@ -119,6 +119,10 @@ interface ElkjopDB extends DBSchema {
         defaultSize: 'small' | 'medium' | 'large';
         autoExport: boolean;
         autoExportOnSave: boolean;
+        titles: {
+          dayReport: string;
+          weekReport: string;
+        };
       };
       notifications: {
         enabled: boolean;
@@ -377,7 +381,11 @@ class DatabaseService {
         defaultQuality: 'high',
         defaultSize: 'medium',
         autoExport: false,
-        autoExportOnSave: false
+        autoExportOnSave: false,
+        titles: {
+          dayReport: '{day}',
+          weekReport: 'Week {week}'
+        }
       },
       notifications: {
         enabled: true,

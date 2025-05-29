@@ -36,7 +36,13 @@ try {
       
       // Store operations
       getStoreValue: (key) => ipcRenderer.invoke('get-store-value', key),
-      setStoreValue: (key, value) => ipcRenderer.invoke('set-store-value', key, value)
+      setStoreValue: (key, value) => ipcRenderer.invoke('set-store-value', key, value),
+      
+      // PDF generation
+      generatePDF: (data) => ipcRenderer.invoke('generate-pdf', data),
+      
+      // Changelog
+      getChangelog: () => ipcRenderer.invoke('get-changelog')
     }
   );
   console.log('Preload script completed successfully');

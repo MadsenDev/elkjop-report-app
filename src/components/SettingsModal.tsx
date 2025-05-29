@@ -9,13 +9,14 @@ import { db } from '../services/db';
 import { VERSION } from '../config/version';
 import ResetLoadingScreen from './ResetLoadingScreen';
 import elkjopLogo from '../assets/elkjop_logo.png';
+import ReactMarkdown from 'react-markdown';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type SettingsTab = 'People' | 'Services' | 'Goals' | 'Display' | 'Theme' | 'Data' | 'Report' | 'Notifications' | 'About';
+type SettingsTab = 'People' | 'Services' | 'Goals' | 'Display' | 'Theme' | 'Data' | 'Report' | 'Notifications' | 'About' | 'Changelog';
 
 interface DisplaySettings {
   compactView: boolean;
@@ -121,7 +122,8 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     Data: true,
     Report: true,
     Notifications: true,
-    About: true
+    About: true,
+    Changelog: true
   };
 
   // Theme Settings
@@ -481,6 +483,14 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setNotificationSettings(prev => ({ ...prev, [field]: value }));
     }
   };
+
+  const [changelog, setChangelog] = useState<string>('');
+
+  useEffect(() => {
+    if (settingsTab === 'Changelog' && !changelog) {
+      window.electron.getChangelog().then(setChangelog);
+    }
+  }, [settingsTab, changelog]);
 
   const renderTabContent = () => {
     if (settingsTab === 'Notifications') {
@@ -1641,6 +1651,90 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {settingsTab === 'Changelog' && (
+              <div className="settings-changelog-wrapper flex flex-col items-center">
+                <div className="mb-6 w-full max-w-2xl">
+                  <h2 className="text-2xl font-bold text-elkjop-green mb-1">Changelog</h2>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">See what's new and improved in each version of Elkjøp Report App.</p>
+                </div>
+                <div className="settings-changelog w-full max-w-2xl overflow-y-auto">
+                  {changelog ? <ReactMarkdown>{changelog}</ReactMarkdown> : <div>Loading changelog...</div>}
+                  <style>{`
+                    .settings-changelog-wrapper {
+                      padding-top: 1.5rem;
+                      padding-bottom: 1.5rem;
+                    }
+                    .settings-changelog {
+                      background: var(--tw-prose-bg, #f8fafc);
+                      border-radius: 0.75rem;
+                      padding: 2rem 2.5rem;
+                      margin-top: 0;
+                      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+                      border: 1px solid #e5e7eb;
+                      min-height: 300px;
+                      max-height: 600px;
+                    }
+                    .settings-changelog h1, .settings-changelog h2, .settings-changelog h3 {
+                      color: #041752;
+                      margin-top: 1.5em;
+                      margin-bottom: 0.5em;
+                      font-weight: 700;
+                    }
+                    .settings-changelog h1 { font-size: 2rem; }
+                    .settings-changelog h2 { font-size: 1.25rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.2em; }
+                    .settings-changelog h3 { font-size: 1.1rem; }
+                    .settings-changelog ul {
+                      list-style-type: disc;
+                      padding-left: 1.5em;
+                      margin-left: 0;
+                      margin-bottom: 1em;
+                    }
+                    .settings-changelog ol {
+                      list-style-type: decimal;
+                      padding-left: 1.5em;
+                      margin-left: 0;
+                      margin-bottom: 1em;
+                    }
+                    .settings-changelog li {
+                      margin-bottom: 0.25em;
+                    }
+                    .settings-changelog code {
+                      background: #f1f5f9;
+                      color: #2563eb;
+                      border-radius: 0.25em;
+                      padding: 0.1em 0.4em;
+                      font-size: 0.95em;
+                    }
+                    .settings-changelog pre {
+                      background: #f1f5f9;
+                      color: #334155;
+                      border-radius: 0.4em;
+                      padding: 1em;
+                      overflow-x: auto;
+                      margin-bottom: 1em;
+                    }
+                    .settings-changelog table {
+                      border-collapse: collapse;
+                      width: 100%;
+                      margin-bottom: 1em;
+                    }
+                    .settings-changelog th, .settings-changelog td {
+                      border: 1px solid #e5e7eb;
+                      padding: 0.5em 1em;
+                    }
+                    .settings-changelog th {
+                      background: #e0f2fe;
+                      color: #041752;
+                    }
+                    .settings-changelog a {
+                      color: #2563eb;
+                      text-decoration: underline;
+                    }
+                  `}</style>
                 </div>
               </div>
             )}

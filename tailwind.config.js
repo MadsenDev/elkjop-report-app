@@ -12,6 +12,11 @@ module.exports = {
         'elkjop-blue': '#041752',
         'elkjop-blue-dark': '#031652',
       },
+      fontFamily: {
+        sans: ['Segoe UI', '-apple-system', 'BlinkMacSystemFont', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        serif: ['Times New Roman', 'serif'],
+        mono: ['Consolas', 'monospace'],
+      },
     },
   },
   plugins: [],

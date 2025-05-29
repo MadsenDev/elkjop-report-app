@@ -120,7 +120,7 @@ export default function WeekReportCard() {
             </svg>
           </div>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            Week {selectedWeek}
+            {settings.report.titles.weekReport.replace('{week}', selectedWeek)}
           </h2>
         </div>
       </div>

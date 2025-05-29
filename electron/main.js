@@ -1,6 +1,9 @@
-const { app, BrowserWindow, ipcMain, protocol, clipboard, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol, clipboard, nativeImage, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const Store = require('electron-store');
+const puppeteer = require('puppeteer-core');
+const { generatePDF } = require('./handlers/pdfHandler');
 
 const store = new Store();
 const isDev = process.env.NODE_ENV === 'development';
@@ -14,7 +17,7 @@ function createWindow() {
 
   mainWindow = new BrowserWindow({
     width: 1200,
-    height: 800,
+    height: 900,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -24,8 +27,12 @@ function createWindow() {
     },
     frame: false,
     titleBarStyle: 'hidden',
-    icon: path.join(__dirname, 'icons/icon.png')
+    icon: path.join(__dirname, 'icons/icon.png'),
+    backgroundColor: '#ffffff'
   });
+
+  // Enable better font rendering
+  mainWindow.webContents.setZoomFactor(1);
 
   // Load the app
   if (isDev) {
@@ -129,4 +136,18 @@ ipcMain.handle('clipboard-write-image', (_, imageData) => {
 ipcMain.handle('clipboard-read-image', () => {
   const image = clipboard.readImage();
   return image.isEmpty() ? null : image.toDataURL();
+});
+
+// Handle PDF generation
+ipcMain.handle('generate-pdf', async (event, data) => {
+  return generatePDF(data);
+});
+
+ipcMain.handle('get-changelog', async () => {
+  try {
+    const changelogPath = path.join(__dirname, '..', 'CHANGELOG.md');
+    return fs.readFileSync(changelogPath, 'utf-8');
+  } catch (err) {
+    return '# Changelog\nUnable to load changelog.';
+  }
 }); 

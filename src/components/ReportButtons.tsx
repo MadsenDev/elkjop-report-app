@@ -1,9 +1,8 @@
 import { CalendarIcon, ChartBarIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
-import { pdf } from '@react-pdf/renderer';
-import PDFReport from './PDFReport';
 import useReportStore from '../store';
 import { useState } from 'react';
 import { Day } from '../types';
+import { db } from '../services/db';
 
 interface ReportButtonsProps {
   onDayReport: () => void;
@@ -11,12 +10,22 @@ interface ReportButtonsProps {
   selectedDay: Day;
 }
 
+interface StoreState {
+  avsAssignments: any[];
+  insuranceAgreements: any[];
+  precalibratedTVs: any[];
+  repairTickets: any[];
+  goals: any[];
+  selectedWeek: string;
+}
+
 export default function ReportButtons({ onDayReport, onWeekReport, selectedDay }: ReportButtonsProps) {
-  const avsAssignments = useReportStore((state) => state.avsAssignments);
-  const insuranceAgreements = useReportStore((state) => state.insuranceAgreements);
-  const precalibratedTVs = useReportStore((state) => state.precalibratedTVs);
-  const repairTickets = useReportStore((state) => state.repairTickets);
-  const goalsData = useReportStore((state) => state.goals);
+  const avsAssignments = useReportStore((state: StoreState) => state.avsAssignments);
+  const insuranceAgreements = useReportStore((state: StoreState) => state.insuranceAgreements);
+  const precalibratedTVs = useReportStore((state: StoreState) => state.precalibratedTVs);
+  const repairTickets = useReportStore((state: StoreState) => state.repairTickets);
+  const goalsData = useReportStore((state: StoreState) => state.goals);
+  const selectedWeek = useReportStore((state: StoreState) => state.selectedWeek);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,44 +34,43 @@ export default function ReportButtons({ onDayReport, onWeekReport, selectedDay }
     setError(null);
     
     try {
-      console.log('Starting PDF generation with data:', {
+      // Calculate previous week
+      const [year, weekNumber] = selectedWeek.split('-').map(Number);
+      const getPreviousWeek = (year: number, week: number) => {
+        if (week === 1) {
+          return { year: year - 1, week: 52 };
+        }
+        return { year, week: week - 1 };
+      };
+      
+      const prevWeek = getPreviousWeek(year, weekNumber);
+      const prevWeekKey = `${prevWeek.year}-${String(prevWeek.week).padStart(2, '0')}`;
+      
+      // Fetch previous week's data
+      const [prevAVS, prevInsurance, prevPrecalibrated, prevRepair] = await Promise.all([
+        db.getAVSAssignments(prevWeekKey),
+        db.getInsuranceAgreements(prevWeekKey),
+        db.getPrecalibratedTVs(prevWeekKey),
+        db.getRepairTickets(prevWeekKey)
+      ]);
+
+      const result = await window.electron.generatePDF({
         selectedDay,
+        selectedWeek,
         avsAssignments,
         insuranceAgreements,
         precalibratedTVs,
         repairTickets,
-        goalsData
+        goalsData,
+        prevWeekData: [prevAVS || [], prevInsurance || [], prevPrecalibrated || [], prevRepair || []]
       });
 
-      const pdfDoc = (
-        <PDFReport
-          selectedDay={selectedDay}
-          avsAssignments={avsAssignments}
-          insuranceAgreements={insuranceAgreements}
-          precalibratedTVs={precalibratedTVs}
-          repairTickets={repairTickets}
-          goalsData={goalsData}
-        />
-      );
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to generate PDF');
+      }
 
-      console.log('Created PDF document component');
-
-      const blob = await pdf(pdfDoc).toBlob();
-      console.log('Generated PDF blob:', blob);
-
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      const filename = `weekly_report_${selectedDay.toLowerCase()}.pdf`;
-      link.setAttribute('download', filename);
-      console.log('Downloading PDF as:', filename);
-      
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      console.log('PDF download initiated successfully');
+      // Show success message or open the PDF
+      console.log('PDF generated successfully at:', result.path);
     } catch (error) {
       console.error('Error generating PDF:', error);
       setError(error instanceof Error ? error.message : 'Failed to generate PDF');

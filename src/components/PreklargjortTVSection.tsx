@@ -95,8 +95,8 @@ export default function PrecalibratedTVSection({ day }: PrecalibratedTVSectionPr
           setEditingIndex(null);
           setFormData({ person: '', completed: 1 });
           setIsModalOpen(true);
-        }} color="purple">
-          Add Completion
+        }} color="purple" aria-label="Add Completion">
+          +
         </Button>
       }
     >

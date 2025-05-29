@@ -314,7 +314,7 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
       <main>
-        <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto py-6 sm:px-6 lg:px-8 w-full">
           <HiddenReports
             dayReportRef={dayReportRef}
             weekReportRef={weekReportRef}
@@ -637,7 +637,7 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="space-y-8"
+                  className="space-y-8 w-full"
                 >
                   {children}
                 </motion.div>

@@ -90,8 +90,8 @@ export default function RepairTicketsSection({ day }: RepairTicketsSectionProps)
           setEditingIndex(null);
           setFormData({ person: "", created: 1 });
           setIsModalOpen(true);
-        }} color="orange">
-          Add Ticket
+        }} color="orange" aria-label="Add Ticket">
+          +
         </Button>
       }
     >

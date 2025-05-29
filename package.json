@@ -1,7 +1,7 @@
 {
   "name": "elkjop-report-app",
   "private": true,
-  "version": "1.6.1",
+  "version": "1.7.0",
   "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
@@ -14,14 +14,26 @@
   "dependencies": {
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.0",
+    "@headlessui/react": "^2.2.4",
+    "@heroicons/react": "^2.2.0",
     "@mui/material": "^5.15.12",
     "@types/node": "^20.11.25",
     "chart.js": "^4.4.2",
+    "date-fns": "^4.1.0",
     "electron-store": "^8.2.0",
     "framer-motion": "^11.0.8",
+    "html-to-image": "^1.11.13",
+    "idb": "^8.0.3",
+    "puppeteer": "^24.9.0",
+    "puppeteer-core": "^24.9.0",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.2.0",
-    "react-dom": "^18.2.0"
+    "react-confetti": "^6.4.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^5.5.0",
+    "react-markdown": "^10.1.0",
+    "react-use": "^17.6.0",
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
     "@types/react": "^18.2.64",

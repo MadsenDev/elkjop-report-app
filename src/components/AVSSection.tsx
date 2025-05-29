@@ -139,8 +139,8 @@ export default function AVSSection({ day }: AVSSectionProps) {
             gmOverride: ''
           });
           setIsModalOpen(true);
-        }} color="blue">
-          Add Service
+        }} color="blue" aria-label="Add Service">
+          +
         </Button>
       }
     >
