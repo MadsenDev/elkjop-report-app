@@ -9,6 +9,7 @@ import { WrenchIcon } from "@heroicons/react/24/outline";
 import type { RepairTicket } from "../store";
 import SectionModal from "./ui/SectionModal";
 import NumberInput from "./ui/NumberInput";
+import { FiPlus } from 'react-icons/fi';
 
 interface RepairTicketsSectionProps {
   day: Day;
@@ -86,12 +87,17 @@ export default function RepairTicketsSection({ day }: RepairTicketsSectionProps)
       icon={<WrenchIcon className="w-6 h-6" />}
       description="Repair Tickets Created"
       action={
-        <Button onClick={() => {
-          setEditingIndex(null);
-          setFormData({ person: "", created: 1 });
-          setIsModalOpen(true);
-        }} color="orange" aria-label="Add Ticket">
-          +
+        <Button
+          onClick={() => {
+            setEditingIndex(null);
+            setFormData({ person: "", created: 1 });
+            setIsModalOpen(true);
+          }}
+          color="orange"
+          aria-label="Add Ticket"
+          className="rounded-full w-10 h-10 flex items-center justify-center text-white bg-orange-500 hover:bg-orange-600 shadow-md transition-all"
+        >
+          <FiPlus size={24} />
         </Button>
       }
     >

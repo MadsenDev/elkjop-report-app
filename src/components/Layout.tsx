@@ -51,6 +51,30 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
   const { settings } = useDisplaySettings();
   const [reportImageData, setReportImageData] = useState<string | null>(null);
   const [reportType, setReportType] = useState<'day' | 'week' | null>(null);
+  const [dayProgresses, setDayProgresses] = useState<Record<Day, number>>({
+    Monday: 0,
+    Tuesday: 0,
+    Wednesday: 0,
+    Thursday: 0,
+    Friday: 0,
+    Saturday: 0
+  });
+
+  // Recalculate progress when selected week or data changes
+  useEffect(() => {
+    const newProgresses = days.reduce((acc, day) => {
+      acc[day] = calculateDayProgress(day);
+      return acc;
+    }, {} as Record<Day, number>);
+    setDayProgresses(newProgresses);
+  }, [
+    useReportStore.getState().selectedWeek,
+    useReportStore.getState().avsAssignments,
+    useReportStore.getState().insuranceAgreements,
+    useReportStore.getState().precalibratedTVs,
+    useReportStore.getState().repairTickets,
+    useReportStore.getState().goals
+  ]);
 
   // Always select current day on mount
   useEffect(() => {
@@ -312,159 +336,9 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
-      <main>
-        <div className="mx-auto py-6 sm:px-6 lg:px-8 w-full">
-          <HiddenReports
-            dayReportRef={dayReportRef}
-            weekReportRef={weekReportRef}
-            selectedDay={selectedDay}
-          />
-
-          {/* Party Easter Egg Button */}
-          <motion.button
-            className="fixed top-4 right-4 w-2 h-2 rounded-full bg-gray-400/10 hover:bg-gray-400/20 transition-[background-color,color,border-color] duration-500 ease-in-out z-50"
-            onMouseEnter={startParty}
-            onMouseLeave={stopParty}
-            whileHover={{ scale: 1.5 }}
-          >
-            <motion.div
-              className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-red-500"
-              initial={{ scale: 0 }}
-              animate={{ scale: partyProgress / 100 }}
-              transition={{ duration: 0.1 }}
-            />
-          </motion.button>
-
-          {/* Party Overlay */}
-          <AnimatePresence>
-            {partyMode && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 pointer-events-none z-40"
-              >
-                {/* Confetti */}
-                {[...Array(100)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className="absolute w-2 h-2 rounded-full"
-                    style={{
-                      background: `hsl(${Math.random() * 360}, 100%, 50%)`,
-                      left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                    }}
-                    animate={{
-                      y: [0, window.innerHeight],
-                      x: [0, Math.random() * 200 - 100],
-                      rotate: [0, 720],
-                      scale: [1, 0],
-                    }}
-                    transition={{
-                      duration: 2 + Math.random() * 3,
-                      repeat: Infinity,
-                      ease: "linear",
-                    }}
-                  />
-                ))}
-
-                {/* Floating Emojis */}
-                {[...Array(20)].map((_, i) => (
-                  <motion.div
-                    key={`emoji-${i}`}
-                    className="absolute text-2xl"
-                    style={{
-                      left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                    }}
-                    animate={{
-                      y: [0, -window.innerHeight],
-                      x: [0, Math.random() * 100 - 50],
-                      rotate: [0, 360],
-                      scale: [0.5, 1.5, 0.5],
-                    }}
-                    transition={{
-                      duration: 3 + Math.random() * 2,
-                      repeat: Infinity,
-                      ease: "linear",
-                    }}
-                  >
-                    {['🎉', '🎊', '🎈', '🎨', '🌈', '✨', '🎪', '🎭', '🎪', '🎯'][Math.floor(Math.random() * 10)]}
-                  </motion.div>
-                ))}
-
-                {/* Rainbow Background */}
-                <motion.div
-                  className="absolute inset-0 opacity-30"
-                  animate={{
-                    background: [
-                      'linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000)',
-                      'linear-gradient(45deg, #ff00c8, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff)',
-                    ],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: "linear",
-                  }}
-                />
-
-                {/* Animated Shapes */}
-                {[...Array(15)].map((_, i) => (
-                  <motion.div
-                    key={`shape-${i}`}
-                    className="absolute"
-                    style={{
-                      width: Math.random() * 100 + 50,
-                      height: Math.random() * 100 + 50,
-                      borderRadius: Math.random() > 0.5 ? '50%' : '0%',
-                      background: `hsla(${Math.random() * 360}, 100%, 50%, 0.1)`,
-                      left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                    }}
-                    animate={{
-                      scale: [1, 1.5, 1],
-                      rotate: [0, 180, 360],
-                      x: [0, Math.random() * 100 - 50, 0],
-                      y: [0, Math.random() * 100 - 50, 0],
-                    }}
-                    transition={{
-                      duration: 4 + Math.random() * 2,
-                      repeat: Infinity,
-                      ease: "linear",
-                    }}
-                  />
-                ))}
-
-                {/* Glowing Orbs */}
-                {[...Array(10)].map((_, i) => (
-                  <motion.div
-                    key={`orb-${i}`}
-                    className="absolute rounded-full blur-xl"
-                    style={{
-                      width: Math.random() * 200 + 100,
-                      height: Math.random() * 200 + 100,
-                      background: `radial-gradient(circle, hsla(${Math.random() * 360}, 100%, 50%, 0.3) 0%, transparent 70%)`,
-                      left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                    }}
-                    animate={{
-                      scale: [1, 1.5, 1],
-                      x: [0, Math.random() * 200 - 100, 0],
-                      y: [0, Math.random() * 200 - 100, 0],
-                    }}
-                    transition={{
-                      duration: 5 + Math.random() * 3,
-                      repeat: Infinity,
-                      ease: "linear",
-                    }}
-                  />
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+      <main className="flex-1 overflow-hidden">
+        <div className="h-full flex">
           {/* Sidebar */}
           <AnimatePresence>
             {sidebarOpen && (
@@ -501,7 +375,7 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
                       </h2>
                     </div>
                     {days.map((day) => {
-                      const progress = calculateDayProgress(day);
+                      const progress = dayProgresses[day];
                       const isGoalMet = progress >= 100;
                       return (
                         <button
@@ -585,11 +459,11 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
           <motion.div
             ref={mainContentRef}
             animate={mainContentControls}
-            className="transition-[background-color,color,border-color] duration-500 ease-in-out"
+            className="flex-1 transition-[background-color,color,border-color] duration-500 ease-in-out relative z-10 overflow-auto"
           >
             {/* Main content */}
             <div className={`flex transition-all duration-500 ease-in-out ${sidebarOpen ? 'ml-72' : ''}`}>
-              <div className="flex-1 transition-[background-color,color,border-color] duration-500 ease-in-out">
+              <div className="flex-1 transition-[background-color,color,border-color] duration-500 ease-in-out p-6 pt-16">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-4">
                     <button
@@ -637,44 +511,44 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="space-y-8 w-full"
+                  className="w-full"
                 >
                   {children}
                 </motion.div>
               </div>
             </div>
           </motion.div>
-
-          {/* Modals */}
-          <Modal
-            isOpen={modalOpen}
-            onClose={handleModalClose}
-            title="Notification"
-            message={modalMessage}
-            countdown={modalCountdown}
-            onConfirm={reportImageData ? handleDownloadReport : undefined}
-            confirmText={reportImageData ? "Download Image" : undefined}
-            disableCountdownOnButtons={!!reportImageData}
-          />
-
-          <Modal
-            isOpen={resetModalOpen}
-            onClose={() => setResetModalOpen(false)}
-            title="Reset Data"
-            message="Are you sure you want to reset all data? This action cannot be undone."
-            onConfirm={handleResetData}
-            confirmText="Reset"
-            cancelText="Cancel"
-          />
-
-          <ResetLoadingScreen isOpen={isResetting} />
-
-          <SettingsModal
-            isOpen={settingsOpen}
-            onClose={() => setSettingsOpen(false)}
-          />
         </div>
       </main>
+
+      {/* Modals */}
+      <Modal
+        isOpen={modalOpen}
+        onClose={handleModalClose}
+        title="Notification"
+        message={modalMessage}
+        countdown={modalCountdown}
+        onConfirm={reportImageData ? handleDownloadReport : undefined}
+        confirmText={reportImageData ? "Download Image" : undefined}
+        disableCountdownOnButtons={!!reportImageData}
+      />
+
+      <Modal
+        isOpen={resetModalOpen}
+        onClose={() => setResetModalOpen(false)}
+        title="Reset Data"
+        message="Are you sure you want to reset all data? This action cannot be undone."
+        onConfirm={handleResetData}
+        confirmText="Reset"
+        cancelText="Cancel"
+      />
+
+      <ResetLoadingScreen isOpen={isResetting} />
+
+      <SettingsModal
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
     </div>
   );
 } 

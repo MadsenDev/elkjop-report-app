@@ -69,6 +69,7 @@ cp -v public/data/*.json dist_electron/data/
 echo "Build data directory contents:"
 ls -la dist_electron/data/
 
-echo "Build complete! Installers and portable executables are available in:"
-echo "dist_electron/"
-echo "Data files are in the 'data' folder next to the executables" 
+echo "🏁 Build complete!"
+echo "Installers and portable executables are available in:"
+echo "  dist_electron/"
+echo "Data files are in the 'data' folder next to the executables"

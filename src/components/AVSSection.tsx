@@ -12,6 +12,7 @@ import type { AVSAssignment } from "../store";
 import ServiceSelect from "./ServiceSelect";
 import SectionModal from './ui/SectionModal';
 import NumberInput from './ui/NumberInput';
+import { FiPlus } from 'react-icons/fi';
 
 interface AVSSectionProps {
   day: Day;
@@ -129,18 +130,23 @@ export default function AVSSection({ day }: AVSSectionProps) {
       icon={<CurrencyDollarIcon className="w-6 h-6" />}
       description="Additional Value Services"
       action={
-        <Button onClick={() => {
-          setEditingIndex(null);
-          setFormData({
-            person: '',
-            serviceId: '',
-            priceOverride: '',
-            directGM: false,
-            gmOverride: ''
-          });
-          setIsModalOpen(true);
-        }} color="blue" aria-label="Add Service">
-          +
+        <Button
+          onClick={() => {
+            setEditingIndex(null);
+            setFormData({
+              person: '',
+              serviceId: '',
+              priceOverride: '',
+              directGM: false,
+              gmOverride: ''
+            });
+            setIsModalOpen(true);
+          }}
+          color="blue"
+          aria-label="Add Service"
+          className="rounded-full w-10 h-10 flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700 shadow-md transition-all"
+        >
+          <FiPlus size={24} />
         </Button>
       }
     >

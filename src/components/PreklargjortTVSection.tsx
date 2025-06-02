@@ -9,6 +9,7 @@ import type { PrecalibratedTVCompletion } from "../store";
 import { FaTv } from "react-icons/fa";
 import SectionModal from './ui/SectionModal';
 import NumberInput from './ui/NumberInput';
+import { FiPlus } from 'react-icons/fi';
 
 interface PrecalibratedTVSectionProps {
   day: Day;
@@ -91,12 +92,17 @@ export default function PrecalibratedTVSection({ day }: PrecalibratedTVSectionPr
       icon={<FaTv />}
       description="TV Setup Completions"
       action={
-        <Button onClick={() => {
-          setEditingIndex(null);
-          setFormData({ person: '', completed: 1 });
-          setIsModalOpen(true);
-        }} color="purple" aria-label="Add Completion">
-          +
+        <Button
+          onClick={() => {
+            setEditingIndex(null);
+            setFormData({ person: '', completed: 1 });
+            setIsModalOpen(true);
+          }}
+          color="purple"
+          aria-label="Add Completion"
+          className="rounded-full w-10 h-10 flex items-center justify-center text-white bg-purple-600 hover:bg-purple-700 shadow-md transition-all"
+        >
+          <FiPlus size={24} />
         </Button>
       }
     >

@@ -91,20 +91,25 @@ export default function WeekPicker() {
     setIsOpen(false);
   };
 
-  // Get the weeks to display based on the settings
-  const displayWeeks = settings.showAllWeeks 
-    ? Array.from({ length: 52 }, (_, i) => {
-        const weekNum = i + 1;
-        return `${getYear(new Date())}-${weekNum.toString().padStart(2, '0')}`;
-      })
-    : availableWeeks;
-
   // Get current week key
   const getCurrentWeekKey = () => {
     const now = new Date();
     const weekNum = getWeek(now, { weekStartsOn: 1 });
     return `${getYear(now)}-${weekNum.toString().padStart(2, '0')}`;
   };
+
+  // Get the weeks to display based on the settings
+  const displayWeeks = settings.showAllWeeks 
+    ? Array.from({ length: 52 }, (_, i) => {
+        const weekNum = i + 1;
+        return `${getYear(new Date())}-${weekNum.toString().padStart(2, '0')}`;
+      })
+    : [...new Set([...availableWeeks, getCurrentWeekKey()])].sort((a, b) => {
+        // Sort weeks chronologically
+        const [yearA, weekA] = a.split('-').map(Number);
+        const [yearB, weekB] = b.split('-').map(Number);
+        return yearA === yearB ? weekA - weekB : yearA - yearB;
+      });
 
   return (
     <div className="relative" ref={dropdownRef}>

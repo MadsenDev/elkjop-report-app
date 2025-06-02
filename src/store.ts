@@ -159,398 +159,330 @@ export interface ReportState {
   importUserData: (file: File) => Promise<void>;
 }
 
-// Add initialization function
-const initializeIndexedDB = async () => {
-  try {
-    console.log('Initializing IndexedDB with JSON data...');
-    
-    // Load services
-    const servicesResponse = await fetch('./data/services.json');
-    if (servicesResponse.ok) {
-      const servicesData = await servicesResponse.json();
-      await db.setServices(servicesData);
-      console.log('Services data initialized in IndexedDB');
-    }
-
-    // Load people
-    const peopleResponse = await fetch('./data/people.json');
-    if (peopleResponse.ok) {
-      const peopleData = await peopleResponse.json();
-      await db.setPeople(peopleData);
-      console.log('People data initialized in IndexedDB');
-    }
-
-    // Load goals
-    const goalsResponse = await fetch('./data/goals.json');
-    if (goalsResponse.ok) {
-      const goalsData = await goalsResponse.json();
-      await db.setGoals(goalsData);
-      console.log('Goals data initialized in IndexedDB');
-    }
-
-    console.log('IndexedDB initialization complete');
-  } catch (error) {
-    console.error('Failed to initialize IndexedDB:', error);
-  }
-};
-
+// Create the store
 const useReportStore = create<ReportState>()(
-    persist(
-      (set, get) => ({
-        selectedDay: 'Monday',
-        selectedWeek: '',  // Will be set to current week on load
-        setSelectedDay: (day) => set({ selectedDay: day }),
-        setSelectedWeek: async (week) => {
-          set({ selectedWeek: week });
-          // Reload all data for the selected week
-          await get().loadAllData();
-        },
-        avsAssignments: [],
-        setAVSAssignment: async (assignment) => {
-          const newAssignments = [...get().avsAssignments, assignment];
-          set({ avsAssignments: newAssignments });
-          await db.setAVSAssignments(newAssignments, get().selectedWeek);
-        },
-        editAVSAssignment: async (index, assignment) => {
-          const newAssignments = get().avsAssignments.map((a, i) => i === index ? assignment : a);
-          set({ avsAssignments: newAssignments });
-          await db.setAVSAssignments(newAssignments, get().selectedWeek);
-        },
-        services: [],
-        people: [],
-        goals: [],
-        weekDates: {
-          Monday: '',
-          Tuesday: '',
-          Wednesday: '',
-          Thursday: '',
-          Friday: '',
-          Saturday: '',
-          Sunday: ''
-        },
-        setWeekDates: async (dates) => {
-          set({ weekDates: dates });
-          await db.setWeekDates(dates, get().selectedWeek);
-        },
-        loadServices: async () => {
-          try {
-            console.log('Loading services data...');
-            const data = await db.getServices();
-            if (data) {
-              console.log('Loaded services from IndexedDB:', data);
-              set({ services: data });
-              return;
-            }
-            await initializeIndexedDB();
-            const newData = await db.getServices();
-            if (newData) {
-              console.log('Loaded services after initialization:', newData);
-              set({ services: newData });
-            }
-          } catch (error) {
-            console.error('Failed to load services:', error);
+  persist(
+    (set, get) => ({
+      selectedDay: 'Monday' as Day,
+      selectedWeek: '',  // Will be set to current week on load
+      setSelectedDay: (day: Day) => set({ selectedDay: day }),
+      setSelectedWeek: async (week: string) => {
+        set({ selectedWeek: week });
+        // Reload all data for the selected week
+        await get().loadAllData();
+      },
+      avsAssignments: [] as AVSAssignment[],
+      insuranceAgreements: [] as InsuranceAgreementSale[],
+      precalibratedTVs: [] as PrecalibratedTVCompletion[],
+      repairTickets: [] as RepairTicket[],
+      qualityInspections: [] as QualityInspection[],
+      services: [] as Service[],
+      people: [] as Person[],
+      goals: [] as Goal[],
+      weekDates: {
+        Monday: '',
+        Tuesday: '',
+        Wednesday: '',
+        Thursday: '',
+        Friday: '',
+        Saturday: '',
+        Sunday: ''
+      },
+      availableWeeks: [] as string[],
+      settings: getDefaultSettings(),
+      setAVSAssignment: async (assignment: AVSAssignment) => {
+        const newAssignments = [...get().avsAssignments, assignment];
+        set({ avsAssignments: newAssignments });
+        await db.setAVSAssignments(newAssignments, get().selectedWeek);
+      },
+      editAVSAssignment: async (index: number, assignment: AVSAssignment) => {
+        const newAssignments = get().avsAssignments.map((a, i) => i === index ? assignment : a);
+        set({ avsAssignments: newAssignments });
+        await db.setAVSAssignments(newAssignments, get().selectedWeek);
+      },
+      setWeekDates: async (dates: { [key in Day]: string }) => {
+        set({ weekDates: dates });
+        await db.setWeekDates(dates, get().selectedWeek);
+      },
+      loadServices: async () => {
+        try {
+          console.log('Loading services data...');
+          const data = await db.getServices();
+          if (data) {
+            console.log('Loaded services from IndexedDB:', data);
+            set({ services: data });
+            return;
           }
-        },
-        loadPeople: async () => {
-          try {
-            console.log('Loading people data...');
-            const data = await db.getPeople();
-            if (data) {
-              console.log('Loaded people from IndexedDB:', data);
-              set({ people: data });
-              return;
-            }
-            await initializeIndexedDB();
-            const newData = await db.getPeople();
-            if (newData) {
-              console.log('Loaded people after initialization:', newData);
-              set({ people: newData });
-            }
-          } catch (error) {
-            console.error('Failed to load people:', error);
+          // Load from JSON if not in IndexedDB
+          const servicesResponse = await fetch('./data/services.json');
+          if (servicesResponse.ok) {
+            const servicesData = await servicesResponse.json();
+            await db.setServices(servicesData);
+            set({ services: servicesData });
+            console.log('Services data initialized from JSON');
           }
-        },
-        loadGoals: async () => {
-          try {
-            console.log('Loading goals data...');
-            const data = await db.getGoals();
-            if (data) {
-              console.log('Loaded goals from IndexedDB:', data);
-              set({ goals: data });
-              return;
-            }
-            await initializeIndexedDB();
-            const newData = await db.getGoals();
-            if (newData) {
-              console.log('Loaded goals after initialization:', newData);
-              set({ goals: newData });
-            }
-          } catch (error) {
-            console.error('Failed to load goals:', error);
+        } catch (error) {
+          console.error('Failed to load services:', error);
+        }
+      },
+      loadPeople: async () => {
+        try {
+          console.log('Loading people data...');
+          const data = await db.getPeople();
+          if (data) {
+            console.log('Loaded people from IndexedDB:', data);
+            set({ people: data });
+            return;
           }
-        },
-        loadWeekDates: async () => {
-          try {
-            console.log('Loading week dates...');
-            const data = await db.getWeekDates();
-            if (data) {
-              console.log('Loaded week dates from IndexedDB:', data);
-              set({ weekDates: data });
-            }
-          } catch (error) {
-            console.error('Failed to load week dates:', error);
+          // Load from JSON if not in IndexedDB
+          const peopleResponse = await fetch('./data/people.json');
+          if (peopleResponse.ok) {
+            const peopleData = await peopleResponse.json();
+            await db.setPeople(peopleData);
+            set({ people: peopleData });
+            console.log('People data initialized from JSON');
           }
-        },
-        loadAllData: async () => {
-          const currentWeek = get().selectedWeek;
-          if (!currentWeek) return;
+        } catch (error) {
+          console.error('Failed to load people:', error);
+        }
+      },
+      loadGoals: async () => {
+        try {
+          console.log('Loading goals data...');
+          const data = await db.getGoals();
+          if (data) {
+            console.log('Loaded goals from IndexedDB:', data);
+            set({ goals: data });
+            return;
+          }
+          // Load from JSON if not in IndexedDB
+          const goalsResponse = await fetch('./data/goals.json');
+          if (goalsResponse.ok) {
+            const goalsData = await goalsResponse.json();
+            await db.setGoals(goalsData);
+            set({ goals: goalsData });
+            console.log('Goals data initialized from JSON');
+          }
+        } catch (error) {
+          console.error('Failed to load goals:', error);
+        }
+      },
+      loadWeekDates: async () => {
+        try {
+          console.log('Loading week dates...');
+          const data = await db.getWeekDates();
+          if (data) {
+            console.log('Loaded week dates from IndexedDB:', data);
+            set({ weekDates: data });
+          }
+        } catch (error) {
+          console.error('Failed to load week dates:', error);
+        }
+      },
+      loadAllData: async () => {
+        const currentWeek = get().selectedWeek;
+        if (!currentWeek) return;
 
-          try {
-            const [
-              avsAssignments,
-              insuranceAgreements,
-              precalibratedTVs,
-              repairTickets,
-              qualityInspections
-            ] = await Promise.all([
-              db.getAVSAssignments(currentWeek),
-              db.getInsuranceAgreements(currentWeek),
-              db.getPrecalibratedTVs(currentWeek),
-              db.getRepairTickets(currentWeek),
-              db.getQualityInspections(currentWeek)
-            ]);
+        try {
+          const [
+            avsAssignments,
+            insuranceAgreements,
+            precalibratedTVs,
+            repairTickets,
+            qualityInspections
+          ] = await Promise.all([
+            db.getAVSAssignments(currentWeek),
+            db.getInsuranceAgreements(currentWeek),
+            db.getPrecalibratedTVs(currentWeek),
+            db.getRepairTickets(currentWeek),
+            db.getQualityInspections(currentWeek)
+          ]);
 
-            set({
-              avsAssignments: avsAssignments || [],
-              insuranceAgreements: insuranceAgreements || [],
-              precalibratedTVs: precalibratedTVs || [],
-              repairTickets: repairTickets || [],
-              qualityInspections: qualityInspections || []
-            });
-          } catch (error) {
-            console.error('Failed to load data:', error);
-          }
-        },
-        insuranceAgreements: [],
-        setInsuranceAgreement: async (sale) => {
-          const newAgreements = [...get().insuranceAgreements, sale];
-          set({ insuranceAgreements: newAgreements });
-          await db.setInsuranceAgreements(newAgreements, get().selectedWeek);
-        },
-        editInsuranceAgreement: async (index, sale) => {
-          const newAgreements = get().insuranceAgreements.map((s, i) => i === index ? sale : s);
-          set({ insuranceAgreements: newAgreements });
-          await db.setInsuranceAgreements(newAgreements, get().selectedWeek);
-        },
-        precalibratedTVs: [],
-        setPrecalibratedTV: async (completion) => {
-          const newTVs = [...get().precalibratedTVs, completion];
-          set({ precalibratedTVs: newTVs });
-          await db.setPrecalibratedTVs(newTVs, get().selectedWeek);
-        },
-        editPrecalibratedTV: async (index, completion) => {
-          const newTVs = get().precalibratedTVs.map((p, i) => i === index ? completion : p);
-          set({ precalibratedTVs: newTVs });
-          await db.setPrecalibratedTVs(newTVs, get().selectedWeek);
-        },
-        repairTickets: [],
-        setRepairTicket: async (ticket) => {
-          const newTickets = [...get().repairTickets, ticket];
-          set({ repairTickets: newTickets });
-          await db.setRepairTickets(newTickets, get().selectedWeek);
-        },
-        editRepairTicket: async (index, ticket) => {
-          const newTickets = get().repairTickets.map((t, i) => i === index ? ticket : t);
-          set({ repairTickets: newTickets });
-          await db.setRepairTickets(newTickets, get().selectedWeek);
-        },
-        qualityInspections: [],
-        setQualityInspection: async (day, count) => {
-          const filtered = get().qualityInspections.filter(qi => qi.day !== day);
-          const newInspections = [...filtered, { day, count }];
-          set({ qualityInspections: newInspections });
-          await db.setQualityInspections(newInspections, get().selectedWeek);
-        },
-        availableWeeks: [],
-        loadAvailableWeeks: async () => {
-          try {
-            const weeks = await db.getAvailableWeeks();
-            set({ availableWeeks: weeks });
+          set({
+            avsAssignments: avsAssignments || [],
+            insuranceAgreements: insuranceAgreements || [],
+            precalibratedTVs: precalibratedTVs || [],
+            repairTickets: repairTickets || [],
+            qualityInspections: qualityInspections || []
+          });
+        } catch (error) {
+          console.error('Failed to load data:', error);
+        }
+      },
+      loadAvailableWeeks: async () => {
+        try {
+          const weeks = await db.getAvailableWeeks();
+          set({ availableWeeks: weeks });
 
-            // If no week is selected, select the most recent week
-            if (!get().selectedWeek && weeks.length > 0) {
-              const currentWeek = weeks[weeks.length - 1];
-              set({ selectedWeek: currentWeek });
-              await get().loadAllData();
-            }
-          } catch (error) {
-            console.error('Failed to load available weeks:', error);
+          // If no week is selected, select the most recent week
+          if (!get().selectedWeek && weeks.length > 0) {
+            const currentWeek = weeks[weeks.length - 1];
+            set({ selectedWeek: currentWeek });
+            await get().loadAllData();
           }
-        },
-        settings: {
-          display: {
-            compactView: false,
-            showSections: {
-              avs: true,
-              insurance: true,
-              precalibrated: true,
-              repair: true
-            },
-            defaultDay: 'current' as const,
-            numberFormat: {
-              currencyDecimals: 2,
-              numberDecimals: 0
-            }
-          },
-          theme: {
-            fontSize: 'medium' as const,
-            animationSpeed: 'normal' as const,
-            accentColors: {
-              avs: 'blue' as const,
-              insurance: 'green' as const,
-              precalibrated: 'purple' as const,
-              repair: 'orange' as const,
-              summary: 'indigo' as const
-            }
-          },
-          data: {
-            autoSave: true,
-            autoSaveInterval: 5,
-            dataRetention: 30,
-            defaultValues: {
-              serviceSold: 1,
-              repairTickets: 1,
-              precalibratedTVs: 1,
-              insuranceAgreements: 1
-            }
-          },
-          report: {
-            defaultFormat: 'png' as const,
-            defaultQuality: 'high' as const,
-            defaultSize: 'medium' as const,
-            autoExport: false,
-            autoExportOnSave: false,
-            titles: {
-              dayReport: '{day}',
-              weekReport: 'Week {week}'
-            }
-          },
-          notifications: {
-            enabled: true,
-            sound: true,
-            duration: 3000,
-            goalsAchievement: true
-          },
-          backup: {
-            autoBackup: true,
-            backupFrequency: 24,
-            retentionPeriod: 30,
-            encryptBackups: true
-          },
-          showAllWeeks: false
-        },
-        loadSettings: async () => {
-          try {
-            const settings = await db.getSettings();
-            if (settings) {
-              // Ensure report titles are initialized
-              if (!settings.report?.titles) {
-                settings.report = {
-                  ...settings.report,
-                  titles: {
-                    dayReport: '{day}',
-                    weekReport: 'Week {week}'
-                  }
-                };
-              }
-              set({ settings });
-            } else {
-              // If no settings exist, use default settings and save them
-              const defaultSettings = get().settings;
-              await db.setSettings(defaultSettings);
-              set({ settings: defaultSettings });
-            }
-          } catch (error) {
-            console.error('Failed to load settings:', error);
-            // Use default settings if loading fails
-            const defaultSettings = get().settings;
+        } catch (error) {
+          console.error('Failed to load available weeks:', error);
+        }
+      },
+      loadSettings: async () => {
+        try {
+          console.log('Loading settings...');
+          const loaded = await db.getSettings();
+          console.log('Loaded settings from DB:', loaded);
+          const defaultSettings = getDefaultSettings();
+          console.log('Default settings:', defaultSettings);
+          
+          // If no settings exist, initialize with defaults
+          if (!loaded) {
+            console.log('No settings found, initializing with defaults');
             await db.setSettings(defaultSettings);
             set({ settings: defaultSettings });
+            return;
           }
-        },
-        updateSettings: async (newSettings) => {
-          try {
-            const currentSettings = get().settings;
-            const updatedSettings = { ...currentSettings, ...newSettings };
-            // Ensure report titles are initialized
-            if (!updatedSettings.report?.titles) {
-              updatedSettings.report = {
-                ...updatedSettings.report,
-                titles: {
-                  dayReport: '{day}',
-                  weekReport: 'Week {week}'
-                }
-              };
-            }
-            await db.setSettings(updatedSettings);
-            set({ settings: updatedSettings });
-          } catch (error) {
-            console.error('Failed to update settings:', error);
+          
+          // Deep merge loaded settings with defaults
+          const merged = deepMergeSettings(defaultSettings, loaded);
+          console.log('Merged settings:', merged);
+          
+          // Always save the merged version to ensure consistency
+          await db.setSettings(merged);
+          
+          // Update the store with merged settings
+          set({ settings: merged });
+          console.log('Settings loaded successfully:', merged);
+        } catch (error) {
+          console.error('Failed to load settings:', error);
+          // If loading fails, use default settings
+          const defaultSettings = getDefaultSettings();
+          await db.setSettings(defaultSettings);
+          set({ settings: defaultSettings });
+        }
+      },
+      setInsuranceAgreement: async (sale: InsuranceAgreementSale) => {
+        const newAgreements = [...get().insuranceAgreements, sale];
+        set({ insuranceAgreements: newAgreements });
+        await db.setInsuranceAgreements(newAgreements, get().selectedWeek);
+      },
+      editInsuranceAgreement: async (index: number, sale: InsuranceAgreementSale) => {
+        const newAgreements = get().insuranceAgreements.map((s, i) => i === index ? sale : s);
+        set({ insuranceAgreements: newAgreements });
+        await db.setInsuranceAgreements(newAgreements, get().selectedWeek);
+      },
+      setPrecalibratedTV: async (completion: PrecalibratedTVCompletion) => {
+        const newTVs = [...get().precalibratedTVs, completion];
+        set({ precalibratedTVs: newTVs });
+        await db.setPrecalibratedTVs(newTVs, get().selectedWeek);
+      },
+      editPrecalibratedTV: async (index: number, completion: PrecalibratedTVCompletion) => {
+        const newTVs = get().precalibratedTVs.map((p, i) => i === index ? completion : p);
+        set({ precalibratedTVs: newTVs });
+        await db.setPrecalibratedTVs(newTVs, get().selectedWeek);
+      },
+      setRepairTicket: async (ticket: RepairTicket) => {
+        const newTickets = [...get().repairTickets, ticket];
+        set({ repairTickets: newTickets });
+        await db.setRepairTickets(newTickets, get().selectedWeek);
+      },
+      editRepairTicket: async (index: number, ticket: RepairTicket) => {
+        const newTickets = get().repairTickets.map((t, i) => i === index ? ticket : t);
+        set({ repairTickets: newTickets });
+        await db.setRepairTickets(newTickets, get().selectedWeek);
+      },
+      setQualityInspection: async (day: Day, count: number) => {
+        const filtered = get().qualityInspections.filter(qi => qi.day !== day);
+        const newInspections = [...filtered, { day, count }];
+        set({ qualityInspections: newInspections });
+        await db.setQualityInspections(newInspections, get().selectedWeek);
+      },
+      updateSettings: async (newSettings: Partial<ReportState['settings']>) => {
+        try {
+          const currentSettings = get().settings;
+          const defaultSettings = getDefaultSettings();
+          
+          // Deep merge: default <- current <- new
+          const merged = deepMergeSettings(defaultSettings, deepMergeSettings(currentSettings, newSettings));
+          
+          // Only save if there are actual changes
+          if (JSON.stringify(merged) !== JSON.stringify(currentSettings)) {
+            console.log('Settings changed, updating...');
+            await db.setSettings(merged);
+            set({ settings: merged });
+            console.log('Settings updated successfully');
+          } else {
+            console.log('No settings changes detected');
           }
-        },
-        exportData: async () => {
-          const data = await db.exportData();
-          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'elkjop-report-config.json';
-          a.click();
-          URL.revokeObjectURL(url);
-        },
-        importData: async (file: File) => {
-          const text = await file.text();
-          const data = JSON.parse(text);
-          await db.importData(data);
-          await get().loadAllData();
-        },
-        exportUserData: async () => {
-          const data = await db.exportUserData();
-          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'elkjop-report-user-data.json';
-          a.click();
-          URL.revokeObjectURL(url);
-        },
-        importUserData: async (file: File) => {
-          const text = await file.text();
-          const data = JSON.parse(text);
-          await db.importUserData(data);
-          await get().loadAllData();
-        },
+        } catch (error) {
+          console.error('Failed to update settings:', error);
+        }
+      },
+      exportData: async () => {
+        const data = await db.exportData();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'elkjop-report-config.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      importData: async (file: File) => {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        await db.importData(data);
+        await get().loadAllData();
+      },
+      exportUserData: async () => {
+        const data = await db.exportUserData();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'elkjop-report-user-data.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      importUserData: async (file: File) => {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        await db.importUserData(data);
+        await get().loadAllData();
+      },
+    }),
+    {
+      name: 'elkjop-report-store',
+      partialize: (state) => ({
+        selectedDay: state.selectedDay,
+        selectedWeek: state.selectedWeek,
+        weekDates: state.weekDates,
+        settings: state.settings
       }),
-      {
-        name: 'elkjop-report-store',
-        partialize: (state) => ({
-          selectedDay: state.selectedDay,
-          selectedWeek: state.selectedWeek,
-          weekDates: state.weekDates,
-          settings: state.settings
-        }),
+      onRehydrateStorage: () => async (state) => {
+        // This runs after the store is rehydrated from storage
+        if (state) {
+          try {
+            console.log('Initializing store...');
+            
+            // Initialize settings first
+            await state.loadSettings();
+            
+            // Then initialize other data
+            await Promise.all([
+              state.loadServices(),
+              state.loadPeople(),
+              state.loadGoals(),
+              state.loadWeekDates(),
+              state.loadAvailableWeeks()
+            ]);
+            
+            console.log('Store initialization complete');
+          } catch (error) {
+            console.error('Failed to initialize store:', error);
+          }
+        }
       }
-    )
-  );
-
-// Initialize settings when the store is created
-const initializeStore = async () => {
-  const store = useReportStore.getState();
-  await store.loadSettings();
-};
-
-// Call initialization
-initializeStore().catch(console.error);
+    }
+  )
+);
 
 // Export the load functions
 export const loadServices = async () => {
@@ -573,14 +505,14 @@ export const loadWeekDates = async () => {
   return store.loadWeekDates();
 };
 
-export const loadAllData = async () => {
-  const store = useReportStore.getState();
-  return store.loadAllData();
-};
-
 export const loadAvailableWeeks = async () => {
   const store = useReportStore.getState();
   return store.loadAvailableWeeks();
+};
+
+export const loadAllData = async () => {
+  const store = useReportStore.getState();
+  return store.loadAllData();
 };
 
 export const loadSettings = async () => {
@@ -589,3 +521,94 @@ export const loadSettings = async () => {
 };
 
 export default useReportStore;
+
+// Deep merge settings helper
+function deepMergeSettings<T extends Record<string, any>>(target: T, source: Partial<T>): T {
+  const output = { ...target } as T;
+  if (isObject(target) && isObject(source)) {
+    Object.keys(source).forEach(key => {
+      const sourceValue = source[key as keyof typeof source];
+      const targetValue = target[key as keyof T];
+      
+      if (sourceValue !== undefined) {
+        if (isObject(sourceValue) && isObject(targetValue)) {
+          output[key as keyof T] = deepMergeSettings(targetValue, sourceValue);
+        } else {
+          Object.assign(output, { [key]: sourceValue });
+        }
+      }
+    });
+  }
+  return output;
+}
+
+// Helper to check if value is an object
+function isObject(item: any): item is Record<string, any> {
+  return item && typeof item === 'object' && !Array.isArray(item);
+}
+
+// Returns the full default settings object
+function getDefaultSettings() {
+  return {
+    display: {
+      compactView: false,
+      showSections: {
+        avs: true,
+        insurance: true,
+        precalibrated: true,
+        repair: true
+      },
+      defaultDay: 'current' as 'current' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday',
+      numberFormat: {
+        currencyDecimals: 2,
+        numberDecimals: 0
+      }
+    },
+    theme: {
+      fontSize: 'medium' as 'small' | 'medium' | 'large',
+      animationSpeed: 'normal' as 'slow' | 'normal' | 'fast',
+      accentColors: {
+        avs: 'blue' as 'blue' | 'green' | 'purple' | 'orange' | 'indigo',
+        insurance: 'green' as 'blue' | 'green' | 'purple' | 'orange' | 'indigo',
+        precalibrated: 'purple' as 'blue' | 'green' | 'purple' | 'orange' | 'indigo',
+        repair: 'orange' as 'blue' | 'green' | 'purple' | 'orange' | 'indigo',
+        summary: 'indigo' as 'blue' | 'green' | 'purple' | 'orange' | 'indigo'
+      }
+    },
+    data: {
+      autoSave: true,
+      autoSaveInterval: 5,
+      dataRetention: 30,
+      defaultValues: {
+        serviceSold: 1,
+        repairTickets: 1,
+        precalibratedTVs: 1,
+        insuranceAgreements: 1
+      }
+    },
+    report: {
+      defaultFormat: 'png' as 'png' | 'pdf' | 'csv',
+      defaultQuality: 'high' as 'low' | 'medium' | 'high',
+      defaultSize: 'medium' as 'small' | 'medium' | 'large',
+      autoExport: false,
+      autoExportOnSave: false,
+      titles: {
+        dayReport: 'ASO Daily Report {day}',
+        weekReport: 'ASO Weekly Report {week}'
+      }
+    },
+    notifications: {
+      enabled: true,
+      sound: true,
+      duration: 3000,
+      goalsAchievement: true
+    },
+    backup: {
+      autoBackup: true,
+      backupFrequency: 24,
+      retentionPeriod: 30,
+      encryptBackups: true
+    },
+    showAllWeeks: false
+  };
+}

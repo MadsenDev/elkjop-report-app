@@ -2,7 +2,6 @@ const { app, BrowserWindow, ipcMain, protocol, clipboard, nativeImage, dialog } 
 const path = require('path');
 const fs = require('fs');
 const Store = require('electron-store');
-const puppeteer = require('puppeteer-core');
 const { generatePDF } = require('./handlers/pdfHandler');
 
 const store = new Store();

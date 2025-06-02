@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.2] - 2025-05-30
+
+### Changed
+- Temporarily disabled PDF export functionality while resolving issues with PDF generation and dependencies.
+
+## [1.7.1] - 2025-05-29
+
+### Fixed
+- Sidebar progress bars now update live as you add or edit data, without needing to click a day button. Progress is now fully reactive to store changes.
+
 ## [1.7.0] - 2025-05-29
 
 ### Added

@@ -8,6 +8,7 @@ import GoalProgress from './GoalProgress';
 import { FaShieldAlt } from 'react-icons/fa';
 import SectionModal from './ui/SectionModal';
 import NumberInput from './ui/NumberInput';
+import { FiPlus } from 'react-icons/fi';
 
 interface InsuranceAgreementSectionProps {
   day: Day;
@@ -87,12 +88,17 @@ export default function InsuranceAgreementSection({ day }: InsuranceAgreementSec
       icon={<FaShieldAlt />}
       description="Insurance Agreement Sales"
       action={
-        <Button onClick={() => {
-          setEditingIndex(null);
-          setFormData({ person: '', sold: 1 });
-          setIsModalOpen(true);
-        }} color="green" aria-label="Add Sale">
-          +
+        <Button
+          onClick={() => {
+            setEditingIndex(null);
+            setFormData({ person: '', sold: 1 });
+            setIsModalOpen(true);
+          }}
+          color="green"
+          aria-label="Add Sale"
+          className="rounded-full w-10 h-10 flex items-center justify-center text-white bg-green-600 hover:bg-green-700 shadow-md transition-all"
+        >
+          <FiPlus size={24} />
         </Button>
       }
     >

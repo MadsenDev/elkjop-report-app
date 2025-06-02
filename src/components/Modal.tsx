@@ -68,12 +68,13 @@ export default function Modal({
   }, [isOpen]);
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isOpen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
         >
           <motion.div
@@ -81,6 +82,7 @@ export default function Modal({
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
+            transition={{ duration: 0.2 }}
             className={`relative w-full ${sizeClasses[size]} max-h-[90vh] bg-white dark:bg-gray-800 rounded-xl shadow-xl flex flex-col`}
           >
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">

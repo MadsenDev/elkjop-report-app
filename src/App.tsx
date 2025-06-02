@@ -12,15 +12,20 @@ import { DisplaySettingsProvider, useDisplaySettings } from './contexts/DisplayS
 import { ToastProvider } from './contexts/ToastContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import { VERSION } from './config/version';
-import { loadServices, loadPeople, loadGoals, loadWeekDates, loadAllData } from './store';
+import { loadServices, loadPeople, loadGoals, loadWeekDates, loadAllData, loadSettings, loadAvailableWeeks } from './store';
 import TitleBar from './components/TitleBar';
+import { Day } from './types';
 
 function AppContent() {
-  const selectedDay = useReportStore((state: any) => state.selectedDay);
-  const setSelectedDay = useReportStore((state: any) => state.setSelectedDay);
-  const { settings: displaySettings } = useDisplaySettings();
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [initialDay, setInitialDay] = useState<Day>('Monday');
+
+  // Only access store data after initialization
+  const selectedDay = useReportStore((state) => isInitialized ? state.selectedDay : initialDay);
+  const setSelectedDay = useReportStore((state) => state.setSelectedDay);
+  const { settings: displaySettings } = useDisplaySettings();
 
   useEffect(() => {
     console.log('App mounted');
@@ -37,20 +42,43 @@ function AppContent() {
         setIsLoading(true);
         setLoadError(null);
         console.log('Starting to load initial data...');
+
+        // Load settings first and wait for it to complete
+        console.log('Loading settings...');
+        await loadSettings();
+        console.log('Settings loaded successfully');
+
+        // Then load other data in parallel
+        console.log('Loading other data...');
         await Promise.all([
           loadServices(),
           loadPeople(),
           loadGoals(),
           loadWeekDates(),
+          loadAvailableWeeks(),
           loadAllData()
         ]);
+
+        // Set initial day after data is loaded
+        const jsDay = new Date().getDay();
+        const dayMap: (Day | null)[] = [null, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const today = jsDay === 0 ? 'Monday' : dayMap[jsDay] || 'Monday';
+        if (dayMap.includes(today)) {
+          setInitialDay(today);
+          setSelectedDay(today);
+        } else {
+          setInitialDay('Monday');
+          setSelectedDay('Monday');
+        }
+
         console.log('Initial data loaded successfully');
+        setIsInitialized(true);
       } catch (error) {
         console.error('Failed to load initial data:', error);
         setLoadError(error instanceof Error ? error.message : 'Failed to load data');
       } finally {
         // Ensure loading screen shows for at least 1 second to prevent flickering
-        setTimeout(() => setIsLoading(false), 3000);
+        setTimeout(() => setIsLoading(false), 1000);
       }
     };
 
@@ -66,7 +94,7 @@ function AppContent() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []);
+  }, [setSelectedDay]);
 
   if (isLoading) {
     return <LoadingScreen version={VERSION} />;
@@ -89,33 +117,25 @@ function AppContent() {
     );
   }
 
+  // Only render the main content when the store is initialized
+  if (!isInitialized) {
+    return <LoadingScreen version={VERSION} />;
+  }
+
   return (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <TitleBar />
-      <div className="flex-1 overflow-auto mt-12">
-        <Layout
-          selectedDay={selectedDay}
-          onDayChange={setSelectedDay}
-        >
-          <div className="space-y-8 transition-[background-color,color,border-color] duration-500 ease-in-out">
-            <DaySummary day={selectedDay} />
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 transition-[background-color,color,border-color] duration-500 ease-in-out">
-              {displaySettings.showSections.avs && (
-                <AVSSection day={selectedDay} />
-              )}
-              {displaySettings.showSections.insurance && (
-                <InsuranceAgreementSection day={selectedDay} />
-              )}
-              {displaySettings.showSections.precalibrated && (
-                <PreklargjortTVSection day={selectedDay} />
-              )}
-              {displaySettings.showSections.repair && (
-                <RepairTicketsSection day={selectedDay} />
-              )}
-            </div>
+      <Layout selectedDay={selectedDay} onDayChange={setSelectedDay}>
+        <div className="space-y-6">
+          <DaySummary day={selectedDay} />
+          <div className="grid grid-cols-2 gap-6">
+            <AVSSection day={selectedDay} />
+            <InsuranceAgreementSection day={selectedDay} />
+            <PreklargjortTVSection day={selectedDay} />
+            <RepairTicketsSection day={selectedDay} />
           </div>
-        </Layout>
-      </div>
+        </div>
+      </Layout>
     </div>
   );
 }

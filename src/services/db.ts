@@ -338,7 +338,9 @@ class DatabaseService {
   // Settings operations
   async getSettings() {
     if (!this.db) await this.init();
+    console.log('Getting settings from IndexedDB...');
     const settings = await this.db!.get('settings', 'app');
+    console.log('Retrieved settings from IndexedDB:', settings);
     return settings || {
       display: {
         compactView: false,
@@ -383,8 +385,8 @@ class DatabaseService {
         autoExport: false,
         autoExportOnSave: false,
         titles: {
-          dayReport: '{day}',
-          weekReport: 'Week {week}'
+          dayReport: 'ASO Daily Report {day}',
+          weekReport: 'ASO Weekly Report {week}'
         }
       },
       notifications: {
@@ -405,7 +407,9 @@ class DatabaseService {
 
   async setSettings(settings: ElkjopDB['settings']['value']) {
     if (!this.db) await this.init();
+    console.log('Setting settings in IndexedDB:', settings);
     await this.db!.put('settings', settings, 'app');
+    console.log('Settings saved to IndexedDB');
   }
 
   // Export/Import operations

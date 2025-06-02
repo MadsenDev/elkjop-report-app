@@ -3,6 +3,7 @@ import useReportStore from '../store';
 import { useState } from 'react';
 import { Day } from '../types';
 import { db } from '../services/db';
+import Modal from './Modal';
 
 interface ReportButtonsProps {
   onDayReport: () => void;
@@ -28,10 +29,14 @@ export default function ReportButtons({ onDayReport, onWeekReport, selectedDay }
   const selectedWeek = useReportStore((state: StoreState) => state.selectedWeek);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<{message: string, stack?: string, name?: string} | null>(null);
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
 
   const handlePDFClick = async () => {
     setIsGenerating(true);
     setError(null);
+    setErrorDetails(null);
+    setErrorModalOpen(false);
     
     try {
       // Calculate previous week
@@ -66,6 +71,9 @@ export default function ReportButtons({ onDayReport, onWeekReport, selectedDay }
       });
 
       if (!result.success) {
+        setError(result.error || 'Failed to generate PDF');
+        setErrorDetails({ message: result.error, stack: result.stack, name: result.name });
+        setErrorModalOpen(true);
         throw new Error(result.error || 'Failed to generate PDF');
       }
 
@@ -73,41 +81,55 @@ export default function ReportButtons({ onDayReport, onWeekReport, selectedDay }
       console.log('PDF generated successfully at:', result.path);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      setError(error instanceof Error ? error.message : 'Failed to generate PDF');
+      if (!errorModalOpen) {
+        setError(error instanceof Error ? error.message : 'Failed to generate PDF');
+        setErrorDetails({ message: error instanceof Error ? error.message : String(error) });
+        setErrorModalOpen(true);
+      }
     } finally {
       setIsGenerating(false);
     }
   };
 
   return (
-    <div className="flex items-center gap-4">
-      <button
-        onClick={onDayReport}
-        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-elkjop-green rounded-lg hover:bg-elkjop-green/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-elkjop-green dark:focus:ring-offset-gray-800"
-      >
-        <CalendarIcon className="h-5 w-5" />
-        Day Report
-      </button>
-      <button
-        onClick={onWeekReport}
-        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-elkjop-green rounded-lg hover:bg-elkjop-green/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-elkjop-green dark:focus:ring-offset-gray-800"
-      >
-        <ChartBarIcon className="h-5 w-5" />
-        Week Report
-      </button>
-      <button
-        onClick={handlePDFClick}
-        disabled={isGenerating}
-        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-elkjop-green rounded-lg hover:bg-elkjop-green/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-elkjop-green dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <DocumentArrowDownIcon className="h-5 w-5" />
-        {isGenerating ? 'Generating PDF...' : 'Export PDF'}
-      </button>
-      {error && (
-        <div className="text-red-500 text-sm">
-          {error}
-        </div>
-      )}
-    </div>
+    <>
+      <div className="flex items-center gap-4">
+        <button
+          onClick={onDayReport}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-elkjop-green rounded-lg hover:bg-elkjop-green/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-elkjop-green dark:focus:ring-offset-gray-800"
+        >
+          <CalendarIcon className="h-5 w-5" />
+          Day Report
+        </button>
+        <button
+          onClick={onWeekReport}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-elkjop-green rounded-lg hover:bg-elkjop-green/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-elkjop-green dark:focus:ring-offset-gray-800"
+        >
+          <ChartBarIcon className="h-5 w-5" />
+          Week Report
+        </button>
+        <button
+          onClick={handlePDFClick}
+          disabled={isGenerating}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-elkjop-green rounded-lg hover:bg-elkjop-green/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-elkjop-green dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <DocumentArrowDownIcon className="h-5 w-5" />
+          {isGenerating ? 'Generating PDF...' : 'Export PDF'}
+        </button>
+      </div>
+      <Modal
+        isOpen={errorModalOpen}
+        onClose={() => setErrorModalOpen(false)}
+        title="PDF Export Error"
+        message={errorDetails ? (
+          <div>
+            <div className="mb-2 text-red-600 font-semibold">{errorDetails.message}</div>
+            {errorDetails.name && <div className="mb-1 text-xs text-gray-500">Type: {errorDetails.name}</div>}
+            {errorDetails.stack && <pre className="text-xs text-gray-400 whitespace-pre-wrap overflow-x-auto max-h-48">{errorDetails.stack}</pre>}
+          </div>
+        ) : error}
+        noFooter
+      />
+    </>
   );
 } 

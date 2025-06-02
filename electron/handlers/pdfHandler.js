@@ -1,4 +1,5 @@
-const puppeteer = require('puppeteer');
+// electron/handlers/pdfHandler.js
+const { BrowserWindow, app } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -17,10 +18,8 @@ const generatePDF = async ({
   prevWeekData
 }) => {
   try {
-    // Parse year and week from selectedWeek
     const [year, week] = selectedWeek.split('-').map(Number);
 
-    // Calculate totals for current week
     const currentTotals = {
       avs: avsAssignments.reduce((sum, a) => sum + (a.gm || 0), 0),
       insurance: insuranceAgreements.reduce((sum, a) => sum + (a.sold || 0), 0),
@@ -28,7 +27,6 @@ const generatePDF = async ({
       repair: repairTickets.reduce((sum, a) => sum + (a.completed || 0), 0)
     };
 
-    // Calculate totals for previous week
     const prevTotals = {
       avs: prevWeekData[0].reduce((sum, a) => sum + (a.gm || 0), 0),
       insurance: prevWeekData[1].reduce((sum, a) => sum + (a.sold || 0), 0),
@@ -36,12 +34,9 @@ const generatePDF = async ({
       repair: prevWeekData[3].reduce((sum, a) => sum + (a.completed || 0), 0)
     };
 
-    // Calculate top performers
     const topAVS = Object.entries(
       avsAssignments.reduce((acc, a) => {
-        if (!acc[a.person]) {
-          acc[a.person] = { gm: 0, sales: 0 };
-        }
+        if (!acc[a.person]) acc[a.person] = { gm: 0, sales: 0 };
         acc[a.person].gm += a.gm || 0;
         acc[a.person].sales += 1;
         return acc;
@@ -69,15 +64,21 @@ const generatePDF = async ({
       }, {})
     ).sort((a, b) => b[1] - a[1])[0];
 
-    // Get week dates
     const weekDates = getWeekDates(year, week);
-
-    // Generate chart configuration
     const chartConfig = getChartConfig(currentTotals, prevTotals);
 
-    // Create temporary HTML file
-    const tempHtmlPath = path.join(__dirname, 'temp-report.html');
-    const logoPath = `file://${path.join(__dirname, '..', '..', 'src', 'assets', 'elkjop_logo.png')}`;
+    // Embed logo as data URL
+    const logoFilePath = path.join(__dirname, '..', '..', 'src', 'assets', 'elkjop_logo.png');
+    let logoDataUrl = '';
+    try {
+      const logoBuffer = fs.readFileSync(logoFilePath);
+      const logoBase64 = logoBuffer.toString('base64');
+      logoDataUrl = `data:image/png;base64,${logoBase64}`;
+    } catch (e) {
+      console.error('Failed to load logo for PDF:', e);
+      logoDataUrl = '';
+    }
+
     const htmlContent = getReportTemplate({
       weekNumber: selectedWeek,
       weekDates,
@@ -89,59 +90,58 @@ const generatePDF = async ({
       topPrecalibrated,
       topRepair,
       chartConfig,
-      logoPath
+      logoPath: logoDataUrl
     });
 
-    fs.writeFileSync(tempHtmlPath, htmlContent);
-
-    // Launch browser and generate PDF
-    const browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox']
-    });
-    const page = await browser.newPage();
-    await page.goto(`file://${tempHtmlPath}`);
-
-    // Wait for chart to render
-    await page.evaluate(() => {
-      return new Promise((resolve) => {
-        const checkChart = () => {
-          const canvas = document.getElementById('comparisonChart');
-          if (canvas && canvas.getContext('2d')) {
-            resolve();
-          } else {
-            setTimeout(checkChart, 100);
-          }
-        };
-        checkChart();
-      });
-    });
-
-    // Generate PDF in user's Documents folder
-    const documentsPath = path.join(os.homedir(), 'Documents');
-    const pdfPath = path.join(documentsPath, `report-week-${selectedWeek}.pdf`);
-    await page.pdf({
-      path: pdfPath,
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '20px',
-        right: '20px',
-        bottom: '20px',
-        left: '20px'
+    // Create a hidden BrowserWindow
+    const win = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        offscreen: true,
+        sandbox: false,
+        contextIsolation: true,
+        nodeIntegration: false
       }
     });
 
-    await browser.close();
-    fs.unlinkSync(tempHtmlPath);
+    // Load the HTML content
+    await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent));
 
+    // Wait for Chart.js to render (wait for canvas)
+    await win.webContents.executeJavaScript(`
+      new Promise(resolve => {
+        const check = () => {
+          const canvas = document.getElementById('comparisonChart');
+          if (canvas && canvas.getContext('2d')) resolve();
+          else setTimeout(check, 100);
+        };
+        check();
+      });
+    `);
+
+    // Print to PDF
+    const documentsPath = path.join(os.homedir(), 'Documents');
+    const pdfPath = path.join(documentsPath, `report-week-${selectedWeek}.pdf`);
+    const pdfBuffer = await win.webContents.printToPDF({
+      printBackground: true,
+      marginsType: 1,
+      pageSize: 'A4',
+      landscape: false
+    });
+    fs.writeFileSync(pdfPath, pdfBuffer);
+    win.destroy();
     return { success: true, path: pdfPath };
   } catch (error) {
     console.error('Error generating PDF:', error);
-    return { success: false, error: error.message };
+    return { 
+      success: false, 
+      error: error && error.message ? error.message : String(error),
+      stack: error && error.stack ? error.stack : undefined,
+      name: error && error.name ? error.name : undefined
+    };
   }
 };
 
 module.exports = {
   generatePDF
-}; 
+};
