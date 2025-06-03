@@ -9,7 +9,7 @@ const getReportTemplate = ({
   topPrecalibrated,
   topRepair,
   chartConfig,
-  logoPath
+  logoBase64
 }) => {
   return `
     <!DOCTYPE html>
@@ -289,7 +289,7 @@ const getReportTemplate = ({
           const ctx = document.getElementById('comparisonChart').getContext('2d');
           new Chart(ctx, ${JSON.stringify(chartConfig)});
         </script>
-        <img src="${logoPath}" class="logo-bottom-right" alt="Elkjøp logo" />
+        <img src="data:image/png;base64,${logoBase64}" class="logo-bottom-right" alt="Elkjøp logo" />
       </body>
     </html>
   `;

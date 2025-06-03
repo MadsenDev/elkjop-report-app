@@ -67,16 +67,18 @@ const generatePDF = async ({
     const weekDates = getWeekDates(year, week);
     const chartConfig = getChartConfig(currentTotals, prevTotals);
 
-    // Embed logo as data URL
-    const logoFilePath = path.join(__dirname, '..', '..', 'src', 'assets', 'elkjop_logo.png');
-    let logoDataUrl = '';
+    // Get the correct path to the logo file in both dev and prod
+    const logoFilePath = app.isPackaged
+      ? path.join(process.resourcesPath, 'assets', 'elkjop_logo.png')
+      : path.join(__dirname, '..', '..', 'src', 'assets', 'elkjop_logo.png');
+
+    let logoBase64 = '';
     try {
       const logoBuffer = fs.readFileSync(logoFilePath);
-      const logoBase64 = logoBuffer.toString('base64');
-      logoDataUrl = `data:image/png;base64,${logoBase64}`;
+      logoBase64 = logoBuffer.toString('base64');
     } catch (e) {
       console.error('Failed to load logo for PDF:', e);
-      logoDataUrl = '';
+      logoBase64 = '';
     }
 
     const htmlContent = getReportTemplate({
@@ -90,7 +92,7 @@ const generatePDF = async ({
       topPrecalibrated,
       topRepair,
       chartConfig,
-      logoPath: logoDataUrl
+      logoBase64
     });
 
     // Create a hidden BrowserWindow

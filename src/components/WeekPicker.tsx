@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import useReportStore from '../store';
-import { format, addDays, startOfWeek, endOfWeek, getWeek, getYear } from 'date-fns';
+import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
 
 export default function WeekPicker() {
   const selectedWeek = useReportStore((state) => state.selectedWeek);
@@ -8,26 +8,48 @@ export default function WeekPicker() {
   const setSelectedWeek = useReportStore((state) => state.setSelectedWeek);
   const loadAvailableWeeks = useReportStore((state) => state.loadAvailableWeeks);
   const settings = useReportStore((state) => state.settings);
-  const loadSettings = useReportStore((state) => state.loadSettings);
   const [isOpen, setIsOpen] = useState(false);
   const [dropUp, setDropUp] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const selectedWeekRef = useRef<HTMLDivElement>(null);
 
+  // Get the budget year (starts May 1st)
+  const getBudgetYear = (date: Date) => {
+    const month = date.getMonth() + 1; // getMonth() returns 0-11
+    const year = date.getFullYear();
+    return month < 5 ? year - 1 : year;
+  };
+
+  // Get the week number within the budget year
+  const getWeekNumber = (date: Date) => {
+    const budgetYear = getBudgetYear(date);
+    const budgetYearStart = new Date(budgetYear, 4, 1); // May 1st (month is 0-based)
+    
+    // If the date is before May 1st, use the previous year's budget
+    const startDate = date < budgetYearStart ? new Date(budgetYear - 1, 4, 1) : budgetYearStart;
+    
+    // Calculate days since budget year start
+    const daysSinceStart = Math.floor((date.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Calculate week number (1-based)
+    return Math.floor(daysSinceStart / 7) + 1;
+  };
+
+  // Get current week key in budget year format
+  const getCurrentWeekKey = () => {
+    const now = new Date();
+    const budgetYear = getBudgetYear(now);
+    const weekNumber = getWeekNumber(now);
+    return `${budgetYear}-${weekNumber.toString().padStart(2, '0')}`;
+  };
+
   useEffect(() => {
     const initializeWeek = async () => {
       try {
-        // First load available weeks
         await loadAvailableWeeks();
-        
-        // Get the current week key
-        const currentWeek = getCurrentWeekKey();
-        
-        // If no week is selected, set it to current week
         if (!selectedWeek) {
-          setSelectedWeek(currentWeek);
+          setSelectedWeek(getCurrentWeekKey());
         }
       } catch (error) {
         console.error('Failed to initialize week:', error);
@@ -35,7 +57,7 @@ export default function WeekPicker() {
     };
 
     initializeWeek();
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -48,7 +70,6 @@ export default function WeekPicker() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Scroll to selected week when dropdown opens
   useEffect(() => {
     if (isOpen && selectedWeekRef.current) {
       selectedWeekRef.current.scrollIntoView({ block: 'center' });
@@ -60,8 +81,7 @@ export default function WeekPicker() {
       const rect = buttonRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
-      const dropdownHeight = 240; // Approximate max height of dropdown
-      
+      const dropdownHeight = 240;
       setDropUp(spaceBelow < dropdownHeight && spaceAbove > spaceBelow);
     }
   };
@@ -74,12 +94,17 @@ export default function WeekPicker() {
   const formatWeekLabel = (weekKey: string) => {
     try {
       const [year, week] = weekKey.split('-');
-      const date = new Date(parseInt(year), 0, 1);
-      const weekStart = addDays(date, (parseInt(week) - 1) * 7);
+      const budgetYear = parseInt(year);
+      const nextYear = budgetYear + 1;
+      const weekNum = parseInt(week);
+      
+      // Calculate the actual date for this week
+      const budgetYearStart = new Date(budgetYear, 4, 1); // May 1st
+      const weekStart = addDays(budgetYearStart, (weekNum - 1) * 7);
       const start = startOfWeek(weekStart, { weekStartsOn: 1 });
       const end = endOfWeek(weekStart, { weekStartsOn: 1 });
       
-      return `Week ${week} (${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')})`;
+      return `${budgetYear}/${nextYear}-${weekNum} (${format(start, 'MMM d')} - ${format(end, 'MMM d')})`;
     } catch (error) {
       console.error('Error formatting week:', error);
       return weekKey;
@@ -91,21 +116,15 @@ export default function WeekPicker() {
     setIsOpen(false);
   };
 
-  // Get current week key
-  const getCurrentWeekKey = () => {
-    const now = new Date();
-    const weekNum = getWeek(now, { weekStartsOn: 1 });
-    return `${getYear(now)}-${weekNum.toString().padStart(2, '0')}`;
-  };
-
   // Get the weeks to display based on the settings
   const displayWeeks = settings.showAllWeeks 
     ? Array.from({ length: 52 }, (_, i) => {
         const weekNum = i + 1;
-        return `${getYear(new Date())}-${weekNum.toString().padStart(2, '0')}`;
+        const currentYear = new Date().getFullYear();
+        const budgetYear = getBudgetYear(new Date());
+        return `${budgetYear}-${weekNum.toString().padStart(2, '0')}`;
       })
     : [...new Set([...availableWeeks, getCurrentWeekKey()])].sort((a, b) => {
-        // Sort weeks chronologically
         const [yearA, weekA] = a.split('-').map(Number);
         const [yearB, weekB] = b.split('-').map(Number);
         return yearA === yearB ? weekA - weekB : yearA - yearB;

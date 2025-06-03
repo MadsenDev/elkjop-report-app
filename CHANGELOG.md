@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.5] - 2025-05-30
+
+### Added
+- Implemented Elkjøp's budget year system (starts May 1st)
+- Week numbers now align with Elkjøp's budget year
+- Added support for proper week transitions across budget years
+
+### Changed
+- Modified week calculation to use budget year instead of calendar year
+- Updated date utilities to handle budget year transitions
+- Improved week navigation to work with budget year system
+
+## [1.7.4] - 2025-05-30
+
+### Fixed
+- Fixed broken Elkjøp logo in PDF reports when running the packaged Windows version
+- Changed logo handling to use base64 encoding instead of file paths for better compatibility
+
+## [1.7.3] - 2025-05-30
+
+### Added
+- Animated progress bars in the navigation sidebar with smooth transitions
+- Animated percentage numbers that count up/down when progress changes
+- Progress bars now use gradient colors when goals are met
+
+### Changed
+- Improved progress bar animations to match the style of DaySummary component
+- Enhanced visual feedback for goal completion in the navigation
+- Fixed layout issues with content overlapping TitleBar
+- Implemented proper 2x2 grid layout for sections below DaySummary
+- Made progress bars reactive to store changes without requiring day button clicks
+
+### Fixed
+- Content no longer goes under the TitleBar due to proper z-index and padding
+- Scrollbar now appears only in the main content area, not next to the TitleBar
+
 ## [1.7.2] - 2025-05-30
 
 ### Changed

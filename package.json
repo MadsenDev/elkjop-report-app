@@ -1,7 +1,7 @@
 {
   "name": "elkjop-report-app",
   "private": true,
-  "version": "1.7.2",
+  "version": "1.7.5",
   "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
@@ -65,6 +65,12 @@
       "dist/**/*",
       "electron/**/*",
       "chromium/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "src/assets",
+        "to": "assets"
+      }
     ],
     "win": {
       "target": [

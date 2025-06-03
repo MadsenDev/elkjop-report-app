@@ -58,6 +58,18 @@ export interface QualityInspection {
   count: number;
 }
 
+export interface BudgetYear {
+  startDate: string;
+  endDate: string;
+  previousYearGM: number;
+  goals: {
+    avs: number;
+    insurance: number;
+    precalibrated: number;
+    repair: number;
+  };
+}
+
 export interface ReportState {
   selectedDay: Day;
   selectedWeek: string;  // Format: "YYYY-WW"
@@ -157,6 +169,10 @@ export interface ReportState {
   importData: (file: File) => Promise<void>;
   exportUserData: () => Promise<void>;
   importUserData: (file: File) => Promise<void>;
+  budgetYears: Record<string, BudgetYear>;
+  currentBudgetYear: string;
+  loadBudgetYears: () => Promise<void>;
+  setBudgetYear: (yearKey: string, data: BudgetYear) => Promise<void>;
 }
 
 // Create the store
@@ -190,6 +206,8 @@ const useReportStore = create<ReportState>()(
       },
       availableWeeks: [] as string[],
       settings: getDefaultSettings(),
+      budgetYears: {},
+      currentBudgetYear: '',
       setAVSAssignment: async (assignment: AVSAssignment) => {
         const newAssignments = [...get().avsAssignments, assignment];
         set({ avsAssignments: newAssignments });
@@ -447,6 +465,31 @@ const useReportStore = create<ReportState>()(
         await db.importUserData(data);
         await get().loadAllData();
       },
+      loadBudgetYears: async () => {
+        try {
+          const years = await db.getAllBudgetYears();
+          const budgetYears: Record<string, BudgetYear> = {};
+          Object.entries(years).forEach(([key, value]) => {
+            budgetYears[key] = value;
+          });
+          set({ budgetYears });
+        } catch (error) {
+          console.error('Failed to load budget years:', error);
+        }
+      },
+      setBudgetYear: async (yearKey: string, data: BudgetYear) => {
+        try {
+          await db.setBudgetYear(yearKey, data);
+          set(state => ({
+            budgetYears: {
+              ...state.budgetYears,
+              [yearKey]: data
+            }
+          }));
+        } catch (error) {
+          console.error('Failed to set budget year:', error);
+        }
+      },
     }),
     {
       name: 'elkjop-report-store',
@@ -454,7 +497,9 @@ const useReportStore = create<ReportState>()(
         selectedDay: state.selectedDay,
         selectedWeek: state.selectedWeek,
         weekDates: state.weekDates,
-        settings: state.settings
+        settings: state.settings,
+        budgetYears: state.budgetYears,
+        currentBudgetYear: state.currentBudgetYear
       }),
       onRehydrateStorage: () => async (state) => {
         // This runs after the store is rehydrated from storage

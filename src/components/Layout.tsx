@@ -23,6 +23,29 @@ declare global {
   }
 }
 
+// Animated number counter
+function AnimatedNumber({ value, className = "" }: { value: number, className?: string }) {
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    let start = display;
+    let end = value;
+    if (start === end) return;
+    let raf: number;
+    const step = () => {
+      start += (end - start) / 8;
+      if (Math.abs(end - start) < 1) {
+        setDisplay(end);
+      } else {
+        setDisplay(start);
+        raf = requestAnimationFrame(step);
+      }
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  return <span className={className}>{Math.round(display)}</span>;
+}
+
 interface LayoutProps {
   children: ReactNode;
   selectedDay: Day;
@@ -60,21 +83,21 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
     Saturday: 0
   });
 
-  // Recalculate progress when selected week or data changes
+  // Get all the data we need from the store
+  const avsAssignments = useReportStore((state) => state.avsAssignments);
+  const insuranceAgreements = useReportStore((state) => state.insuranceAgreements);
+  const precalibratedTVs = useReportStore((state) => state.precalibratedTVs);
+  const repairTickets = useReportStore((state) => state.repairTickets);
+  const goals = useReportStore((state) => state.goals);
+
+  // Recalculate progress whenever any of the data changes
   useEffect(() => {
     const newProgresses = days.reduce((acc, day) => {
       acc[day] = calculateDayProgress(day);
       return acc;
     }, {} as Record<Day, number>);
     setDayProgresses(newProgresses);
-  }, [
-    useReportStore.getState().selectedWeek,
-    useReportStore.getState().avsAssignments,
-    useReportStore.getState().insuranceAgreements,
-    useReportStore.getState().precalibratedTVs,
-    useReportStore.getState().repairTickets,
-    useReportStore.getState().goals
-  ]);
+  }, [avsAssignments, insuranceAgreements, precalibratedTVs, repairTickets, goals]);
 
   // Always select current day on mount
   useEffect(() => {
@@ -284,12 +307,6 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
 
   // Calculate progress for each day
   const calculateDayProgress = (day: Day) => {
-    const avsAssignments = useReportStore.getState().avsAssignments;
-    const insuranceAgreements = useReportStore.getState().insuranceAgreements;
-    const precalibratedTVs = useReportStore.getState().precalibratedTVs;
-    const repairTickets = useReportStore.getState().repairTickets;
-    const goals = useReportStore.getState().goals;
-
     const dayIdx = days.indexOf(day);
     const daysUpTo = days.slice(0, dayIdx + 1);
 
@@ -396,20 +413,27 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
                             </div>
                             <div className="flex items-center space-x-2">
                               <div className="w-16 h-1.5 bg-white/20 rounded-full overflow-hidden">
-                                <div
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${Math.min(progress, 100)}%` }}
+                                  transition={{ duration: 0.7 }}
                                   className={`h-full ${
                                     isGoalMet
                                       ? 'bg-gradient-to-r from-elkjop-green to-green-400'
                                       : 'bg-elkjop-green'
                                   }`}
-                                  style={{ width: `${Math.min(progress, 100)}%` }}
                                 />
                               </div>
-                              <span className={`text-xs font-medium ${
-                                isGoalMet ? 'text-elkjop-green' : 'text-white/70'
-                              }`}>
-                                {progress}%
-                              </span>
+                              <motion.span
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.3 }}
+                                className={`text-xs font-medium ${
+                                  isGoalMet ? 'text-elkjop-green' : 'text-white/70'
+                                }`}
+                              >
+                                <AnimatedNumber value={progress} />%
+                              </motion.span>
                             </div>
                           </div>
                         </button>

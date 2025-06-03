@@ -139,6 +139,20 @@ interface ElkjopDB extends DBSchema {
       showAllWeeks: boolean;
     };
   };
+  budgetYears: {
+    key: string;  // Format: "YYYY/YYYY+1" (e.g., "2025/2026")
+    value: {
+      startDate: string;  // ISO date string for May 1st
+      endDate: string;    // ISO date string for April 30th
+      previousYearGM: number;
+      goals: {
+        avs: number;
+        insurance: number;
+        precalibrated: number;
+        repair: number;
+      };
+    };
+  };
 }
 
 class DatabaseService {
@@ -179,6 +193,9 @@ class DatabaseService {
         }
         if (!db.objectStoreNames.contains('settings')) {
           db.createObjectStore('settings');
+        }
+        if (!db.objectStoreNames.contains('budgetYears')) {
+          db.createObjectStore('budgetYears');
         }
       },
     });
@@ -258,15 +275,32 @@ class DatabaseService {
   // Helper function to get current week key
   private getCurrentWeekKey(): string {
     const now = new Date();
-    const getWeekNumber = (date: Date) => {
-      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-      const dayNum = d.getUTCDay() || 7;
-      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-      return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    
+    // Get the budget year (starts May 1st)
+    const getBudgetYear = (date: Date) => {
+      const month = date.getMonth() + 1; // getMonth() returns 0-11
+      const year = date.getFullYear();
+      return month < 5 ? year - 1 : year;
     };
+
+    // Get the week number within the budget year
+    const getWeekNumber = (date: Date) => {
+      const budgetYear = getBudgetYear(date);
+      const budgetYearStart = new Date(budgetYear, 4, 1); // May 1st (month is 0-based)
+      
+      // If the date is before May 1st, use the previous year's budget
+      const startDate = date < budgetYearStart ? new Date(budgetYear - 1, 4, 1) : budgetYearStart;
+      
+      // Calculate days since budget year start
+      const daysSinceStart = Math.floor((date.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Calculate week number (1-based)
+      return Math.floor(daysSinceStart / 7) + 1;
+    };
+
+    const budgetYear = getBudgetYear(now);
     const weekNumber = getWeekNumber(now);
-    return `${now.getFullYear()}-${weekNumber.toString().padStart(2, '0')}`;
+    return `${budgetYear}-${weekNumber.toString().padStart(2, '0')}`;
   }
 
   // Modified methods to use week keys
@@ -554,6 +588,40 @@ class DatabaseService {
     }
     
     return Array.from(weeks).sort().reverse(); // Most recent weeks first
+  }
+
+  // Budget Year operations
+  async getBudgetYear(yearKey: string) {
+    if (!this.db) await this.init();
+    return this.db!.get('budgetYears', yearKey);
+  }
+
+  async setBudgetYear(yearKey: string, data: ElkjopDB['budgetYears']['value']) {
+    if (!this.db) await this.init();
+    await this.db!.put('budgetYears', data, yearKey);
+  }
+
+  async getAllBudgetYears() {
+    if (!this.db) await this.init();
+    const years = await this.db!.getAll('budgetYears');
+    return years;
+  }
+
+  // Helper function to get current budget year key
+  private getCurrentBudgetYearKey(): string {
+    const now = new Date();
+    const month = now.getMonth() + 1; // getMonth() returns 0-11
+    const year = now.getFullYear();
+    const budgetYear = month < 5 ? year - 1 : year;
+    return `${budgetYear}/${budgetYear + 1}`;
+  }
+
+  // Helper function to get budget year key for a specific date
+  private getBudgetYearKeyForDate(date: Date): string {
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    const budgetYear = month < 5 ? year - 1 : year;
+    return `${budgetYear}/${budgetYear + 1}`;
   }
 }
 
