@@ -30,6 +30,7 @@ export default function AVSSection({ day }: AVSSectionProps) {
   const avsAssignments = useReportStore((state) => state.avsAssignments);
   const setAVSAssignment = useReportStore((state) => state.setAVSAssignment);
   const editAVSAssignment = useReportStore((state) => state.editAVSAssignment);
+  const setAVSAssignments = useReportStore((state) => state.setAVSAssignments);
   const services = useReportStore((state) => state.services);
   const people = useReportStore((state) => state.people);
 
@@ -97,7 +98,7 @@ export default function AVSSection({ day }: AVSSectionProps) {
 
   const handleDelete = (index: number) => {
     const newAssignments = avsAssignments.filter((_, i) => i !== index);
-    useReportStore.setState({ avsAssignments: newAssignments });
+    setAVSAssignments(newAssignments);
     setIsModalOpen(false);
     setEditingIndex(null);
   };

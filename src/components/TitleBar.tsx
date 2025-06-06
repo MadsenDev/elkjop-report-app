@@ -2,11 +2,18 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import elkjopLogoWhite from '../assets/icon.png';
 import elkjopLogoDark from '../assets/icon.png';
+import Confetti from 'react-confetti';
+import { useWindowSize } from 'react-use';
 
 const isElectron = window.electron !== undefined;
 
-export default function TitleBar() {
+interface TitleBarProps {
+  isGoalMet?: boolean;
+}
+
+export default function TitleBar({ isGoalMet = false }: TitleBarProps) {
   const [isMaximized, setIsMaximized] = useState(false);
+  const { width, height } = useWindowSize();
 
   useEffect(() => {
     if (!isElectron) return;
@@ -45,12 +52,28 @@ export default function TitleBar() {
 
   return (
     <motion.div 
-      className="h-12 bg-white dark:bg-gray-800 flex items-center justify-between px-4 select-none app-drag fixed top-0 left-0 right-0 z-50 shadow-md"
+      className={`h-12 flex items-center justify-between px-4 select-none app-drag fixed top-0 left-0 right-0 z-50 shadow-md ${
+        isGoalMet 
+          ? 'bg-gradient-to-r from-indigo-500 to-purple-500' 
+          : 'bg-white dark:bg-gray-800'
+      }`}
       style={{ WebkitAppRegion: isElectron ? 'drag' as any : 'none' }}
       initial={{ y: -48 }}
       animate={{ y: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
+      {isGoalMet && (
+        <Confetti
+          width={width}
+          height={height}
+          recycle={true}
+          numberOfPieces={30}
+          gravity={0.1}
+          colors={['#4F46E5', '#10B981', '#3B82F6', '#F59E0B']}
+          opacity={0.3}
+          style={{ pointerEvents: 'none' }}
+        />
+      )}
       {/* Logo and Title */}
       <motion.div 
         className="flex items-center gap-2"
@@ -65,9 +88,16 @@ export default function TitleBar() {
             alt="Elkjøp logo"
             className="h-6 w-auto dark:hidden"
             initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.2 }}
+            animate={{ 
+              opacity: 1, 
+              scale: isGoalMet ? [1, 1.1, 1] : 1,
+              rotate: isGoalMet ? [0, 5, -5, 0] : 0
+            }}
+            transition={{ 
+              duration: isGoalMet ? 0.5 : 0.2,
+              repeat: isGoalMet ? Infinity : 0,
+              repeatDelay: isGoalMet ? 2 : 0
+            }}
           />
           <motion.img
             key="light-logo"
@@ -75,18 +105,38 @@ export default function TitleBar() {
             alt="Elkjøp logo"
             className="h-6 w-auto hidden dark:block"
             initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.2 }}
+            animate={{ 
+              opacity: 1, 
+              scale: isGoalMet ? [1, 1.1, 1] : 1,
+              rotate: isGoalMet ? [0, 5, -5, 0] : 0
+            }}
+            transition={{ 
+              duration: isGoalMet ? 0.5 : 0.2,
+              repeat: isGoalMet ? Infinity : 0,
+              repeatDelay: isGoalMet ? 2 : 0
+            }}
           />
         </AnimatePresence>
         <motion.span 
-          className="text-gray-800 dark:text-white text-sm font-medium"
+          className={`text-sm font-medium ${
+            isGoalMet 
+              ? 'text-white' 
+              : 'text-gray-800 dark:text-white'
+          }`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
           Elkjøp Daily Report
+          {isGoalMet && (
+            <motion.span
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="ml-2 inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-white/20 text-white text-xs"
+            >
+              Goal Met! 🎉
+            </motion.span>
+          )}
         </motion.span>
       </motion.div>
 
@@ -101,7 +151,11 @@ export default function TitleBar() {
         >
           <motion.button
             onClick={handleMinimize}
-            className="w-8 h-8 flex items-center justify-center text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded transition-colors"
+            className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
+              isGoalMet 
+                ? 'text-white hover:bg-white/20' 
+                : 'text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10'
+            }`}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -111,7 +165,11 @@ export default function TitleBar() {
           </motion.button>
           <motion.button
             onClick={handleMaximize}
-            className="w-8 h-8 flex items-center justify-center text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded transition-colors"
+            className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
+              isGoalMet 
+                ? 'text-white hover:bg-white/20' 
+                : 'text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10'
+            }`}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -149,7 +207,11 @@ export default function TitleBar() {
           </motion.button>
           <motion.button
             onClick={handleClose}
-            className="w-8 h-8 flex items-center justify-center text-gray-600 dark:text-white hover:bg-red-500 hover:text-white rounded transition-colors"
+            className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
+              isGoalMet 
+                ? 'text-white hover:bg-red-500/80' 
+                : 'text-gray-600 dark:text-white hover:bg-red-500 hover:text-white'
+            }`}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
           >

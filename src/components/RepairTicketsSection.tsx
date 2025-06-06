@@ -18,6 +18,7 @@ interface RepairTicketsSectionProps {
 export default function RepairTicketsSection({ day }: RepairTicketsSectionProps) {
   const repairTickets = useReportStore((state) => state.repairTickets);
   const setRepairTicket = useReportStore((state) => state.setRepairTicket);
+  const setRepairTickets = useReportStore((state) => state.setRepairTickets);
   const people = useReportStore((state) => state.people);
 
   // Modal state
@@ -65,7 +66,7 @@ export default function RepairTicketsSection({ day }: RepairTicketsSectionProps)
 
   const handleDelete = (person: string) => {
     const newTickets = repairTickets.filter(t => t.person !== person || t.day !== day);
-    useReportStore.setState({ repairTickets: newTickets });
+    setRepairTickets(newTickets);
     setIsModalOpen(false);
     setEditingIndex(null);
   };

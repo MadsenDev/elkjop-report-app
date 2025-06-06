@@ -5,10 +5,8 @@ const fse = require('fs-extra');
 
 (async () => {
   try {
-    console.log('🚀 Launching Puppeteer to ensure Chromium is downloaded...');
     const browser = await puppeteer.launch({ headless: 'new' });
     await browser.close();
-    console.log('✅ Puppeteer launched and Chromium downloaded.');
 
     const chromiumExecutablePath = puppeteer.executablePath();
     const chromiumBase = path.dirname(chromiumExecutablePath);
@@ -19,11 +17,7 @@ const fse = require('fs-extra');
       process.exit(1);
     }
 
-    console.log('📦 Copying Chromium from:', chromiumBase);
-    console.log('➡️  To:', chromiumDest);
-
     fse.copySync(chromiumBase, chromiumDest, { overwrite: true });
-    console.log('✅ Chromium copied successfully.');
   } catch (err) {
     console.error('❌ Error during Chromium copy:', err.message);
     process.exit(1);

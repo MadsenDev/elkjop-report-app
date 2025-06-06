@@ -76,10 +76,10 @@ export default function WeekReportCard() {
   });
 
   // Weekly goals (Saturday goal)
+  const gmGoal = goals.find(g => g.section === 'AVS')?.goals[5] || 0;
   const taGoal = goals.find(g => g.section === 'Insurance Agreements')?.goals[5] || 0;
   const tvGoal = goals.find(g => g.section === 'Precalibrated TVs')?.goals[5] || 0;
   const ticketsGoal = goals.find(g => g.section === 'RepairTickets')?.goals[5] || 0;
-  const gmGoal = goals.find(g => g.section === 'AVS')?.goals[5] || 0;
 
   // Per-person breakdown
   const peopleList = Array.from(people).sort();

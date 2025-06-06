@@ -2,7 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.7.5] - 2025-05-30
+## [1.7.6] - 2025-06-05
+
+### Changed
+- Simplified PDF report header to show only week number without date range
+- Fixed chart scaling to properly display gross margin values
+- Improved chart formatting with proper currency display and tooltips
+- Adjusted chart layout to be more compact and readable
+
+## [1.7.5] - 2025-06-04
 
 ### Added
 - Implemented Elkjøp's budget year system (starts May 1st)

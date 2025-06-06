@@ -50,7 +50,16 @@ const getChartConfig = (currentTotals, prevTotals) => {
             display: true,
             text: 'Gross Margin (NOK)'
           },
-          beginAtZero: true
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return new Intl.NumberFormat('no-NO', { 
+                style: 'currency', 
+                currency: 'NOK',
+                maximumFractionDigits: 0 
+              }).format(value);
+            }
+          }
         },
         y1: {
           type: 'linear',
@@ -77,7 +86,11 @@ const getChartConfig = (currentTotals, prevTotals) => {
               const value = context.raw;
               if (value === null) return null;
               if (context.dataIndex === 0) {
-                return label + ': ' + new Intl.NumberFormat('no-NO', { style: 'currency', currency: 'NOK' }).format(value);
+                return label + ': ' + new Intl.NumberFormat('no-NO', { 
+                  style: 'currency', 
+                  currency: 'NOK',
+                  maximumFractionDigits: 0 
+                }).format(value);
               }
               return label + ': ' + value + ' units';
             }

@@ -8,6 +8,7 @@ export default function WeekPicker() {
   const setSelectedWeek = useReportStore((state) => state.setSelectedWeek);
   const loadAvailableWeeks = useReportStore((state) => state.loadAvailableWeeks);
   const settings = useReportStore((state) => state.settings);
+  const selectedBudgetYear = useReportStore((state) => state.selectedBudgetYear);
   const [isOpen, setIsOpen] = useState(false);
   const [dropUp, setDropUp] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -41,7 +42,7 @@ export default function WeekPicker() {
     const now = new Date();
     const budgetYear = getBudgetYear(now);
     const weekNumber = getWeekNumber(now);
-    return `${budgetYear}-${weekNumber.toString().padStart(2, '0')}`;
+    return `${budgetYear}/${budgetYear + 1}-${weekNumber.toString().padStart(2, '0')}`;
   };
 
   useEffect(() => {
@@ -49,7 +50,14 @@ export default function WeekPicker() {
       try {
         await loadAvailableWeeks();
         if (!selectedWeek) {
-          setSelectedWeek(getCurrentWeekKey());
+          // If we have a selected budget year, use its first week
+          if (selectedBudgetYear) {
+            const [startYear] = selectedBudgetYear.split('/');
+            const firstWeek = `${selectedBudgetYear}-01`;
+            setSelectedWeek(firstWeek);
+          } else {
+            setSelectedWeek(getCurrentWeekKey());
+          }
         }
       } catch (error) {
         console.error('Failed to initialize week:', error);
@@ -57,7 +65,7 @@ export default function WeekPicker() {
     };
 
     initializeWeek();
-  }, []);
+  }, [selectedBudgetYear]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -93,9 +101,9 @@ export default function WeekPicker() {
 
   const formatWeekLabel = (weekKey: string) => {
     try {
-      const [year, week] = weekKey.split('-');
-      const budgetYear = parseInt(year);
-      const nextYear = budgetYear + 1;
+      const [yearPart, week] = weekKey.split('-');
+      const [startYear, endYear] = yearPart.split('/');
+      const budgetYear = parseInt(startYear);
       const weekNum = parseInt(week);
       
       // Calculate the actual date for this week
@@ -104,7 +112,7 @@ export default function WeekPicker() {
       const start = startOfWeek(weekStart, { weekStartsOn: 1 });
       const end = endOfWeek(weekStart, { weekStartsOn: 1 });
       
-      return `${budgetYear}/${nextYear}-${weekNum} (${format(start, 'MMM d')} - ${format(end, 'MMM d')})`;
+      return `${budgetYear}/${endYear}-${weekNum} (${format(start, 'MMM d')} - ${format(end, 'MMM d')})`;
     } catch (error) {
       console.error('Error formatting week:', error);
       return weekKey;
@@ -116,19 +124,30 @@ export default function WeekPicker() {
     setIsOpen(false);
   };
 
-  // Get the weeks to display based on the settings
+  // Get the weeks to display based on the settings and selected budget year
   const displayWeeks = settings.showAllWeeks 
     ? Array.from({ length: 52 }, (_, i) => {
         const weekNum = i + 1;
+        if (selectedBudgetYear) {
+          return `${selectedBudgetYear}-${weekNum.toString().padStart(2, '0')}`;
+        }
         const currentYear = new Date().getFullYear();
         const budgetYear = getBudgetYear(new Date());
-        return `${budgetYear}-${weekNum.toString().padStart(2, '0')}`;
+        return `${budgetYear}/${budgetYear + 1}-${weekNum.toString().padStart(2, '0')}`;
       })
-    : [...new Set([...availableWeeks, getCurrentWeekKey()])].sort((a, b) => {
-        const [yearA, weekA] = a.split('-').map(Number);
-        const [yearB, weekB] = b.split('-').map(Number);
-        return yearA === yearB ? weekA - weekB : yearA - yearB;
-      });
+    : [...new Set([...availableWeeks, getCurrentWeekKey()])]
+        .filter(week => !selectedBudgetYear || week.startsWith(selectedBudgetYear))
+        .sort((a, b) => {
+          const [yearPartA, weekA] = a.split('-');
+          const [yearPartB, weekB] = b.split('-');
+          const [startYearA] = yearPartA.split('/');
+          const [startYearB] = yearPartB.split('/');
+          const budgetYearA = parseInt(startYearA);
+          const budgetYearB = parseInt(startYearB);
+          const weekNumA = parseInt(weekA);
+          const weekNumB = parseInt(weekB);
+          return budgetYearA === budgetYearB ? weekNumA - weekNumB : budgetYearA - budgetYearB;
+        });
 
   return (
     <div className="relative" ref={dropdownRef}>

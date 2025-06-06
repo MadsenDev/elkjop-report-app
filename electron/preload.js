@@ -9,9 +9,9 @@ try {
     'electron',
     {
       // Window control methods
-      minimize: () => ipcRenderer.send('minimize'),
-      maximize: () => ipcRenderer.send('maximize'),
-      close: () => ipcRenderer.send('close'),
+      minimize: () => ipcRenderer.send('window-minimize'),
+      maximize: () => ipcRenderer.send('window-maximize'),
+      close: () => ipcRenderer.send('window-close'),
       
       // Event listeners
       on: (channel, callback) => {

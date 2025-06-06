@@ -6,6 +6,7 @@ const os = require('os');
 const { getReportTemplate } = require('../templates/reportTemplate');
 const { getWeekDates } = require('../utils/dateUtils');
 const { getChartConfig } = require('../utils/chartUtils');
+const { db } = require('../database/db');
 
 const generatePDF = async ({
   selectedDay,
@@ -15,10 +16,19 @@ const generatePDF = async ({
   precalibratedTVs,
   repairTickets,
   goalsData,
-  prevWeekData
+  prevWeekData,
+  budgetYearData,
+  budgetYearSettings
 }) => {
   try {
-    const [year, week] = selectedWeek.split('-').map(Number);
+    console.log('Starting PDF generation...');
+    // Parse the week number correctly from the budget year format (YYYY/YYYY+1-WW)
+    const [yearPart, week] = selectedWeek.split('-');
+    const [startYear] = yearPart.split('/');
+    const year = parseInt(startYear);
+    const weekNum = parseInt(week);
+
+    console.log('Using budget year data:', { budgetYearData, budgetYearSettings });
 
     const currentTotals = {
       avs: avsAssignments.reduce((sum, a) => sum + (a.gm || 0), 0),
@@ -33,6 +43,31 @@ const generatePDF = async ({
       precalibrated: prevWeekData[2].reduce((sum, a) => sum + (a.completed || 0), 0),
       repair: prevWeekData[3].reduce((sum, a) => sum + (a.completed || 0), 0)
     };
+
+    // Calculate budget year progress
+    const yearToDateGM = budgetYearData.avsAssignments.reduce((sum, a) => sum + (a.gm || 0), 0);
+    const yearToDateTAValue = budgetYearData.insuranceAgreements.reduce((sum, a) => sum + (a.sold || 0), 0) * 115; // Multiply TA count by 115
+    
+    // Calculate target based on previous year's GM and TA values
+    const previousYearGM = budgetYearSettings?.previousYearGM?.avs || 0;
+    const previousYearTA = budgetYearSettings?.previousYearGM?.ta || 0;
+    const yearTarget = (previousYearGM + previousYearTA) * 1.05; // Add 5% increase to the sum
+    
+    const yearProgress = (yearToDateGM / yearTarget) * 100;
+    const expectedProgress = (weekNum / 52) * 100;
+    const progressDifference = yearProgress - expectedProgress;
+
+    const budgetYearProgress = {
+      yearToDateGM,
+      yearToDateTAValue,
+      yearTarget,
+      yearProgress,
+      weekNum,
+      expectedProgress,
+      progressDifference
+    };
+
+    console.log('Budget year progress:', budgetYearProgress);
 
     const topAVS = Object.entries(
       avsAssignments.reduce((acc, a) => {
@@ -92,8 +127,11 @@ const generatePDF = async ({
       topPrecalibrated,
       topRepair,
       chartConfig,
-      logoBase64
+      logoBase64,
+      budgetYearProgress
     });
+
+    console.log('Generated HTML content, creating window...');
 
     // Create a hidden BrowserWindow
     const win = new BrowserWindow({
@@ -109,6 +147,8 @@ const generatePDF = async ({
     // Load the HTML content
     await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent));
 
+    console.log('Waiting for Chart.js to render...');
+
     // Wait for Chart.js to render (wait for canvas)
     await win.webContents.executeJavaScript(`
       new Promise(resolve => {
@@ -121,9 +161,12 @@ const generatePDF = async ({
       });
     `);
 
+    console.log('Generating PDF...');
+
     // Print to PDF
     const documentsPath = path.join(os.homedir(), 'Documents');
-    const pdfPath = path.join(documentsPath, `report-week-${selectedWeek}.pdf`);
+    const safeWeekKey = selectedWeek.replace('/', '-');
+    const pdfPath = path.join(documentsPath, `report-week-${safeWeekKey}.pdf`);
     const pdfBuffer = await win.webContents.printToPDF({
       printBackground: true,
       marginsType: 1,
@@ -132,6 +175,8 @@ const generatePDF = async ({
     });
     fs.writeFileSync(pdfPath, pdfBuffer);
     win.destroy();
+
+    console.log('PDF generation completed successfully');
     return { success: true, path: pdfPath };
   } catch (error) {
     console.error('Error generating PDF:', error);

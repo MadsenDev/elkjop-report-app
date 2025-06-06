@@ -65,20 +65,23 @@ const getCurrentWeekKey = () => {
 
   const budgetYear = getBudgetYear(now);
   const weekNumber = getWeekNumber(now);
-  return `${budgetYear}-${weekNumber.toString().padStart(2, '0')}`;
+  return `${budgetYear}/${budgetYear + 1}-${weekNumber.toString().padStart(2, '0')}`;
 };
 
 const getPreviousWeekKey = (weekKey) => {
-  const [year, week] = weekKey.split('-').map(Number);
+  const [yearPart, week] = weekKey.split('-');
+  const [startYear] = yearPart.split('/');
+  const year = parseInt(startYear);
+  const weekNum = parseInt(week);
   
-  if (week === 1) {
+  if (weekNum === 1) {
     // If it's the first week of the budget year, go to the last week of the previous budget year
     const prevYear = year - 1;
     const lastWeek = 52; // Assuming 52 weeks in a year
-    return `${prevYear}-${lastWeek.toString().padStart(2, '0')}`;
+    return `${prevYear}/${prevYear + 1}-${lastWeek.toString().padStart(2, '0')}`;
   }
   
-  return `${year}-${(week - 1).toString().padStart(2, '0')}`;
+  return `${year}/${year + 1}-${(weekNum - 1).toString().padStart(2, '0')}`;
 };
 
 module.exports = {

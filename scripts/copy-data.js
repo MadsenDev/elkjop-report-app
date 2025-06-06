@@ -31,5 +31,4 @@ if (fs.existsSync(publicDir)) {
   };
 
   copyDir(publicDir, distDir);
-  console.log('Public assets copied to dist directory');
 } 

@@ -16,13 +16,11 @@ function createWindow() {
 
   mainWindow = new BrowserWindow({
     width: 1200,
-    height: 900,
+    height: 800,
     webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      sandbox: false,
       preload: preloadPath,
-      webSecurity: true
+      contextIsolation: true,
+      nodeIntegration: false
     },
     frame: false,
     titleBarStyle: 'hidden',
@@ -42,11 +40,11 @@ function createWindow() {
   }
 
   // Handle window controls
-  ipcMain.on('minimize', () => {
+  ipcMain.on('window-minimize', () => {
     mainWindow.minimize();
   });
 
-  ipcMain.on('maximize', () => {
+  ipcMain.on('window-maximize', () => {
     if (mainWindow.isMaximized()) {
       mainWindow.unmaximize();
     } else {
@@ -54,7 +52,7 @@ function createWindow() {
     }
   });
 
-  ipcMain.on('close', () => {
+  ipcMain.on('window-close', () => {
     mainWindow.close();
   });
 
@@ -81,6 +79,59 @@ function createWindow() {
   mainWindow.webContents.on('preload-error', (event, preloadPath, error) => {
     console.error('Preload script error:', preloadPath, error);
   });
+
+  // Handle clipboard operations
+  ipcMain.handle('clipboard-write-text', async (_, text) => {
+    const { clipboard } = require('electron');
+    clipboard.writeText(text);
+  });
+
+  ipcMain.handle('clipboard-read-text', async () => {
+    const { clipboard } = require('electron');
+    return clipboard.readText();
+  });
+
+  ipcMain.handle('clipboard-write-image', async (_, imageData) => {
+    const { clipboard } = require('electron');
+    const nativeImage = require('electron').nativeImage;
+    const image = nativeImage.createFromDataURL(imageData);
+    clipboard.writeImage(image);
+  });
+
+  ipcMain.handle('clipboard-read-image', async () => {
+    const { clipboard } = require('electron');
+    const image = clipboard.readImage();
+    return image.toDataURL();
+  });
+
+  // Handle store operations
+  ipcMain.handle('get-store-value', async (_, key) => {
+    const Store = require('electron-store');
+    const store = new Store();
+    return store.get(key);
+  });
+
+  ipcMain.handle('set-store-value', async (_, key, value) => {
+    const Store = require('electron-store');
+    const store = new Store();
+    store.set(key, value);
+  });
+
+  // Handle PDF generation
+  ipcMain.handle('generate-pdf', async (_, data) => {
+    console.log('Received PDF generation request:', data);
+    try {
+      const result = await generatePDF(data);
+      console.log('PDF generation completed:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in PDF generation:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to generate PDF'
+      };
+    }
+  });
 }
 
 // Create window when app is ready
@@ -104,42 +155,6 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
-});
-
-// Store management
-ipcMain.handle('get-store-value', (_, key) => {
-  return store.get(key);
-});
-
-ipcMain.handle('set-store-value', (_, key, value) => {
-  store.set(key, value);
-  return true;
-});
-
-// Clipboard handlers
-ipcMain.handle('clipboard-write-text', (_, text) => {
-  clipboard.writeText(text);
-  return true;
-});
-
-ipcMain.handle('clipboard-read-text', () => {
-  return clipboard.readText();
-});
-
-ipcMain.handle('clipboard-write-image', (_, imageData) => {
-  const image = nativeImage.createFromDataURL(imageData);
-  clipboard.writeImage(image);
-  return true;
-});
-
-ipcMain.handle('clipboard-read-image', () => {
-  const image = clipboard.readImage();
-  return image.isEmpty() ? null : image.toDataURL();
-});
-
-// Handle PDF generation
-ipcMain.handle('generate-pdf', async (event, data) => {
-  return generatePDF(data);
 });
 
 ipcMain.handle('get-changelog', async () => {

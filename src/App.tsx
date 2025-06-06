@@ -28,8 +28,6 @@ function AppContent() {
   const { settings: displaySettings } = useDisplaySettings();
 
   useEffect(() => {
-    console.log('App mounted');
-    
     // Check for dark mode preference
     if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.documentElement.classList.add('dark');
@@ -41,15 +39,11 @@ function AppContent() {
       try {
         setIsLoading(true);
         setLoadError(null);
-        console.log('Starting to load initial data...');
 
         // Load settings first and wait for it to complete
-        console.log('Loading settings...');
         await loadSettings();
-        console.log('Settings loaded successfully');
 
         // Then load other data in parallel
-        console.log('Loading other data...');
         await Promise.all([
           loadServices(),
           loadPeople(),
@@ -71,7 +65,6 @@ function AppContent() {
           setSelectedDay('Monday');
         }
 
-        console.log('Initial data loaded successfully');
         setIsInitialized(true);
       } catch (error) {
         console.error('Failed to load initial data:', error);
@@ -123,7 +116,7 @@ function AppContent() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       <TitleBar />
       <Layout selectedDay={selectedDay} onDayChange={setSelectedDay}>
         <div className="space-y-6">

@@ -22,6 +22,7 @@ interface FormData {
 export default function InsuranceAgreementSection({ day }: InsuranceAgreementSectionProps) {
   const insuranceAgreements = useReportStore((state) => state.insuranceAgreements);
   const setInsuranceAgreement = useReportStore((state) => state.setInsuranceAgreement);
+  const setInsuranceAgreements = useReportStore((state) => state.setInsuranceAgreements);
   const people = useReportStore((state) => state.people);
 
   // Modal state
@@ -69,7 +70,7 @@ export default function InsuranceAgreementSection({ day }: InsuranceAgreementSec
 
   const handleDelete = (person: string) => {
     const newAgreements = insuranceAgreements.filter(a => a.person !== person || a.day !== day);
-    useReportStore.setState({ insuranceAgreements: newAgreements });
+    setInsuranceAgreements(newAgreements);
     setIsModalOpen(false);
     setEditingIndex(null);
   };

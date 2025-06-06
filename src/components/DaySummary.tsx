@@ -55,6 +55,8 @@ export default function DaySummary({ day }: DaySummaryProps) {
   const [qiCount, setQICount] = useState(0);
   const { width, height } = useWindowSize();
 
+  console.log('DaySummary render:', { day, goals });
+
   // Update QI count when day changes
   useEffect(() => {
     const qiForDay = qualityInspections.find(qi => qi.day === day)?.count || 0;
@@ -175,6 +177,76 @@ export default function DaySummary({ day }: DaySummaryProps) {
       onClick: () => setIsQIModalOpen(true),
     },
   ];
+
+  const getDayData = () => {
+    const dayAVS = avsAssignments.filter(a => a.day === day);
+    const dayInsurance = insuranceAgreements.filter(t => t.day === day);
+    const dayTVs = precalibratedTVs.filter(p => p.day === day);
+    const dayRepairs = repairTickets.filter(r => r.day === day);
+
+    console.log('Day data:', {
+      day,
+      avsCount: dayAVS.length,
+      insuranceCount: dayInsurance.length,
+      tvCount: dayTVs.length,
+      repairCount: dayRepairs.length
+    });
+
+    return {
+      avs: {
+        count: dayAVS.length,
+        gm: dayAVS.reduce((sum, a) => sum + a.gm, 0)
+      },
+      insurance: {
+        count: dayInsurance.length,
+        sold: dayInsurance.reduce((sum, t) => sum + t.sold, 0)
+      },
+      tv: {
+        count: dayTVs.length,
+        completed: dayTVs.reduce((sum, p) => sum + p.completed, 0)
+      },
+      repair: {
+        count: dayRepairs.length,
+        completed: dayRepairs.reduce((sum, r) => sum + r.completed, 0)
+      }
+    };
+  };
+
+  const dayData = getDayData();
+  console.log('Processed day data:', dayData);
+
+  const getGoalProgress = (section: string) => {
+    const sectionData = goals.find(g => g.section === section);
+    console.log('Getting goal progress for section:', { section, sectionData });
+    
+    if (!sectionData) {
+      console.log('No section data found for:', section);
+      return { current: 0, goal: 0 };
+    }
+
+    const dayIndex = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(day);
+    const goal = sectionData.goals[dayIndex];
+    console.log('Goal for day:', { day, dayIndex, goal });
+
+    let current = 0;
+    switch (section) {
+      case 'AVS':
+        current = dayData.avs.gm;
+        break;
+      case 'Insurance Agreements':
+        current = dayData.insurance.sold;
+        break;
+      case 'Precalibrated TVs':
+        current = dayData.tv.completed;
+        break;
+      case 'RepairTickets':
+        current = dayData.repair.completed;
+        break;
+    }
+
+    console.log('Goal progress:', { section, current, goal });
+    return { current, goal };
+  };
 
   return (
     <Card
@@ -299,13 +371,15 @@ export default function DaySummary({ day }: DaySummaryProps) {
               </div>
               {card.progress !== null && card.goal && (
                 <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(card.progress * 100, 100)}%` }}
+                    transition={{ duration: 0.7 }}
                     className={`h-full ${
                       isGoalMet 
-                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500' 
+                        ? 'bg-gradient-to-r from-elkjop-green to-blue-500' 
                         : 'bg-elkjop-green'
                     }`}
-                    style={{ width: `${Math.min(card.progress * 100, 100)}%` }}
                   />
                 </div>
               )}

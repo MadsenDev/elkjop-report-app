@@ -19,40 +19,56 @@ export default function GoalProgress({ day, section, color }: GoalProgressProps)
   const goals = useReportStore((s) => s.goals);
   const [isHovered, setIsHovered] = useState(false);
 
+  console.log('GoalProgress render:', { day, section, goals });
+
   const sectionData = goals.find(g => g.section === section);
-  if (!sectionData) return null;
+  console.log('Found section data:', sectionData);
+  
+  if (!sectionData) {
+    console.log('No section data found for:', section);
+    return null;
+  }
 
   const dayIndex = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(day);
   const goal = sectionData.goals[dayIndex];
+  console.log('Goal for day:', { day, dayIndex, goal });
 
   const getCurrentValue = () => {
     const previousDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].slice(0, dayIndex + 1);
     
     switch (section) {
       case 'AVS':
-        return previousDays.reduce((sum, d) => {
+        const avsValue = previousDays.reduce((sum, d) => {
           return sum + avsAssignments
             .filter(a => a.day === d)
             .reduce((daySum, a) => daySum + a.gm, 0);
         }, 0);
+        console.log('AVS current value:', { previousDays, avsValue });
+        return avsValue;
       case 'Insurance Agreements':
-        return previousDays.reduce((sum, d) => {
+        const insuranceValue = previousDays.reduce((sum, d) => {
           return sum + insuranceAgreements
             .filter(t => t.day === d)
             .reduce((daySum, t) => daySum + t.sold, 0);
         }, 0);
+        console.log('Insurance current value:', { previousDays, insuranceValue });
+        return insuranceValue;
       case 'Precalibrated TVs':
-        return previousDays.reduce((sum, d) => {
+        const tvValue = previousDays.reduce((sum, d) => {
           return sum + precalibratedTVs
             .filter(p => p.day === d)
             .reduce((daySum, p) => daySum + p.completed, 0);
         }, 0);
+        console.log('TV current value:', { previousDays, tvValue });
+        return tvValue;
       case 'RepairTickets':
-        return previousDays.reduce((sum, d) => {
+        const repairValue = previousDays.reduce((sum, d) => {
           return sum + repairTickets
             .filter(r => r.day === d)
             .reduce((daySum, r) => daySum + r.completed, 0);
         }, 0);
+        console.log('Repair current value:', { previousDays, repairValue });
+        return repairValue;
       default:
         return 0;
     }
@@ -61,6 +77,7 @@ export default function GoalProgress({ day, section, color }: GoalProgressProps)
   const currentValue = getCurrentValue();
   const progress = goal > 0 ? Math.min((currentValue / goal) * 100, 100) : 0;
   const remaining = goal - currentValue;
+  console.log('Progress calculation:', { currentValue, goal, progress, remaining });
 
   const descriptions = {
     'AVS': 'Cumulative GM Goal',

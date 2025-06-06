@@ -18,6 +18,8 @@ interface PrecalibratedTVSectionProps {
 export default function PrecalibratedTVSection({ day }: PrecalibratedTVSectionProps) {
   const precalibratedTVs = useReportStore((state) => state.precalibratedTVs);
   const setPrecalibratedTV = useReportStore((state) => state.setPrecalibratedTV);
+  const editPrecalibratedTV = useReportStore((state) => state.editPrecalibratedTV);
+  const setPrecalibratedTVs = useReportStore((state) => state.setPrecalibratedTVs);
   const people = useReportStore((state) => state.people);
 
   // Modal state
@@ -40,9 +42,7 @@ export default function PrecalibratedTVSection({ day }: PrecalibratedTVSectionPr
     };
 
     if (editingIndex !== null) {
-      // When editing, replace all existing completions for this person with a single new one
-      const filteredCompletions = precalibratedTVs.filter(c => c.person !== formData.person || c.day !== day);
-      useReportStore.setState({ precalibratedTVs: [...filteredCompletions, newCompletion] });
+      editPrecalibratedTV(editingIndex, newCompletion);
     } else {
       setPrecalibratedTV(newCompletion);
     }
@@ -70,7 +70,7 @@ export default function PrecalibratedTVSection({ day }: PrecalibratedTVSectionPr
 
   const handleDelete = (person: string) => {
     const newCompletions = precalibratedTVs.filter(c => c.person !== person || c.day !== day);
-    useReportStore.setState({ precalibratedTVs: newCompletions });
+    setPrecalibratedTVs(newCompletions);
     setIsModalOpen(false);
     setEditingIndex(null);
   };

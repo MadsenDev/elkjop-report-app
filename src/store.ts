@@ -61,7 +61,10 @@ export interface QualityInspection {
 export interface BudgetYear {
   startDate: string;
   endDate: string;
-  previousYearGM: number;
+  previousYearGM: {
+    avs: number;
+    ta: number;
+  };
   goals: {
     avs: number;
     insurance: number;
@@ -173,6 +176,14 @@ export interface ReportState {
   currentBudgetYear: string;
   loadBudgetYears: () => Promise<void>;
   setBudgetYear: (yearKey: string, data: BudgetYear) => Promise<void>;
+  selectedBudgetYear: string;
+  setSelectedBudgetYear: (year: string) => Promise<void>;
+  loadBudgetYearData: (yearKey: string) => Promise<void>;
+  deleteBudgetYear: (yearKey: string) => Promise<void>;
+  setPrecalibratedTVs: (tvs: PrecalibratedTVCompletion[]) => void;
+  setAVSAssignments: (assignments: AVSAssignment[]) => void;
+  setInsuranceAgreements: (agreements: InsuranceAgreementSale[]) => void;
+  setRepairTickets: (tickets: RepairTicket[]) => void;
 }
 
 // Create the store
@@ -183,7 +194,16 @@ const useReportStore = create<ReportState>()(
       selectedWeek: '',  // Will be set to current week on load
       setSelectedDay: (day: Day) => set({ selectedDay: day }),
       setSelectedWeek: async (week: string) => {
-        set({ selectedWeek: week });
+        // If the week is already in the correct format (YYYY/YYYY+1-WW), use it directly
+        if (week.includes('/')) {
+          set({ selectedWeek: week });
+        } else {
+          // Convert week key format from "YYYY-WW" to "YYYY/YYYY+1-WW"
+          const [year, weekNum] = week.split('-');
+          const budgetYear = parseInt(year);
+          const formattedWeek = `${budgetYear}/${budgetYear + 1}-${weekNum}`;
+          set({ selectedWeek: formattedWeek });
+        }
         // Reload all data for the selected week
         await get().loadAllData();
       },
@@ -208,6 +228,7 @@ const useReportStore = create<ReportState>()(
       settings: getDefaultSettings(),
       budgetYears: {},
       currentBudgetYear: '',
+      selectedBudgetYear: '',
       setAVSAssignment: async (assignment: AVSAssignment) => {
         const newAssignments = [...get().avsAssignments, assignment];
         set({ avsAssignments: newAssignments });
@@ -224,10 +245,8 @@ const useReportStore = create<ReportState>()(
       },
       loadServices: async () => {
         try {
-          console.log('Loading services data...');
           const data = await db.getServices();
           if (data) {
-            console.log('Loaded services from IndexedDB:', data);
             set({ services: data });
             return;
           }
@@ -237,7 +256,6 @@ const useReportStore = create<ReportState>()(
             const servicesData = await servicesResponse.json();
             await db.setServices(servicesData);
             set({ services: servicesData });
-            console.log('Services data initialized from JSON');
           }
         } catch (error) {
           console.error('Failed to load services:', error);
@@ -245,10 +263,8 @@ const useReportStore = create<ReportState>()(
       },
       loadPeople: async () => {
         try {
-          console.log('Loading people data...');
           const data = await db.getPeople();
           if (data) {
-            console.log('Loaded people from IndexedDB:', data);
             set({ people: data });
             return;
           }
@@ -258,7 +274,6 @@ const useReportStore = create<ReportState>()(
             const peopleData = await peopleResponse.json();
             await db.setPeople(peopleData);
             set({ people: peopleData });
-            console.log('People data initialized from JSON');
           }
         } catch (error) {
           console.error('Failed to load people:', error);
@@ -266,10 +281,8 @@ const useReportStore = create<ReportState>()(
       },
       loadGoals: async () => {
         try {
-          console.log('Loading goals data...');
           const data = await db.getGoals();
           if (data) {
-            console.log('Loaded goals from IndexedDB:', data);
             set({ goals: data });
             return;
           }
@@ -279,7 +292,6 @@ const useReportStore = create<ReportState>()(
             const goalsData = await goalsResponse.json();
             await db.setGoals(goalsData);
             set({ goals: goalsData });
-            console.log('Goals data initialized from JSON');
           }
         } catch (error) {
           console.error('Failed to load goals:', error);
@@ -287,10 +299,8 @@ const useReportStore = create<ReportState>()(
       },
       loadWeekDates: async () => {
         try {
-          console.log('Loading week dates...');
           const data = await db.getWeekDates();
           if (data) {
-            console.log('Loaded week dates from IndexedDB:', data);
             set({ weekDates: data });
           }
         } catch (error) {
@@ -344,15 +354,11 @@ const useReportStore = create<ReportState>()(
       },
       loadSettings: async () => {
         try {
-          console.log('Loading settings...');
           const loaded = await db.getSettings();
-          console.log('Loaded settings from DB:', loaded);
           const defaultSettings = getDefaultSettings();
-          console.log('Default settings:', defaultSettings);
           
           // If no settings exist, initialize with defaults
           if (!loaded) {
-            console.log('No settings found, initializing with defaults');
             await db.setSettings(defaultSettings);
             set({ settings: defaultSettings });
             return;
@@ -360,14 +366,12 @@ const useReportStore = create<ReportState>()(
           
           // Deep merge loaded settings with defaults
           const merged = deepMergeSettings(defaultSettings, loaded);
-          console.log('Merged settings:', merged);
           
           // Always save the merged version to ensure consistency
           await db.setSettings(merged);
           
           // Update the store with merged settings
           set({ settings: merged });
-          console.log('Settings loaded successfully:', merged);
         } catch (error) {
           console.error('Failed to load settings:', error);
           // If loading fails, use default settings
@@ -422,12 +426,8 @@ const useReportStore = create<ReportState>()(
           
           // Only save if there are actual changes
           if (JSON.stringify(merged) !== JSON.stringify(currentSettings)) {
-            console.log('Settings changed, updating...');
             await db.setSettings(merged);
             set({ settings: merged });
-            console.log('Settings updated successfully');
-          } else {
-            console.log('No settings changes detected');
           }
         } catch (error) {
           console.error('Failed to update settings:', error);
@@ -468,11 +468,7 @@ const useReportStore = create<ReportState>()(
       loadBudgetYears: async () => {
         try {
           const years = await db.getAllBudgetYears();
-          const budgetYears: Record<string, BudgetYear> = {};
-          Object.entries(years).forEach(([key, value]) => {
-            budgetYears[key] = value;
-          });
-          set({ budgetYears });
+          set({ budgetYears: years });
         } catch (error) {
           console.error('Failed to load budget years:', error);
         }
@@ -488,7 +484,77 @@ const useReportStore = create<ReportState>()(
           }));
         } catch (error) {
           console.error('Failed to set budget year:', error);
+          throw error;
         }
+      },
+      setSelectedBudgetYear: async (year: string) => {
+        set({ selectedBudgetYear: year });
+        await get().loadBudgetYearData(year);
+      },
+      loadBudgetYearData: async (yearKey: string) => {
+        try {
+          const data = await db.getBudgetYearData(yearKey);
+          // Get the first week's dates or use default empty dates
+          const firstWeekKey = Object.keys(data.weekDates)[0];
+          const weekDates = firstWeekKey ? data.weekDates[firstWeekKey] : {
+            Monday: '',
+            Tuesday: '',
+            Wednesday: '',
+            Thursday: '',
+            Friday: '',
+            Saturday: ''
+          };
+          
+          set({
+            avsAssignments: data.avsAssignments,
+            insuranceAgreements: data.insuranceAgreements,
+            precalibratedTVs: data.precalibratedTVs,
+            repairTickets: data.repairTickets,
+            qualityInspections: data.qualityInspections,
+            weekDates
+          });
+        } catch (error) {
+          console.error('Failed to load budget year data:', error);
+        }
+      },
+      deleteBudgetYear: async (yearKey: string) => {
+        try {
+          await db.deleteBudgetYear(yearKey);
+          set(state => {
+            const { [yearKey]: _, ...remainingYears } = state.budgetYears;
+            return { budgetYears: remainingYears };
+          });
+          
+          // If the deleted year was selected, select another year if available
+          const state = get();
+          if (state.selectedBudgetYear === yearKey) {
+            const remainingYears = Object.keys(state.budgetYears).filter(key => key !== yearKey);
+            if (remainingYears.length > 0) {
+              await state.setSelectedBudgetYear(remainingYears[0]);
+            } else {
+              set({ selectedBudgetYear: '' });
+            }
+          }
+        } catch (error) {
+          console.error('Failed to delete budget year:', error);
+          throw error;
+        }
+      },
+      setPrecalibratedTVs: async (tvs: PrecalibratedTVCompletion[]) => {
+        set({ precalibratedTVs: tvs });
+        await db.setPrecalibratedTVs(tvs, get().selectedWeek);
+      },
+      setAVSAssignments: async (assignments: AVSAssignment[]) => {
+        set({ avsAssignments: assignments });
+        await db.setAVSAssignments(assignments, get().selectedWeek);
+      },
+      setInsuranceAgreements: async (agreements: InsuranceAgreementSale[]) => {
+        set({ insuranceAgreements: agreements });
+        await db.setInsuranceAgreements(agreements, get().selectedWeek);
+      },
+      setRepairTickets: async (tickets: RepairTicket[]) => {
+        set({ repairTickets: tickets });
+        await db.setRepairTickets(tickets, get().selectedWeek);
       },
     }),
     {
@@ -496,17 +562,14 @@ const useReportStore = create<ReportState>()(
       partialize: (state) => ({
         selectedDay: state.selectedDay,
         selectedWeek: state.selectedWeek,
+        selectedBudgetYear: state.selectedBudgetYear,
         weekDates: state.weekDates,
         settings: state.settings,
-        budgetYears: state.budgetYears,
-        currentBudgetYear: state.currentBudgetYear
+        budgetYears: state.budgetYears
       }),
       onRehydrateStorage: () => async (state) => {
-        // This runs after the store is rehydrated from storage
         if (state) {
           try {
-            console.log('Initializing store...');
-            
             // Initialize settings first
             await state.loadSettings();
             
@@ -516,10 +579,18 @@ const useReportStore = create<ReportState>()(
               state.loadPeople(),
               state.loadGoals(),
               state.loadWeekDates(),
-              state.loadAvailableWeeks()
+              state.loadAvailableWeeks(),
+              state.loadBudgetYears()
             ]);
-            
-            console.log('Store initialization complete');
+
+            // Set initial budget year if not set
+            if (!state.selectedBudgetYear) {
+              const currentYear = new Date().getFullYear();
+              const month = new Date().getMonth() + 1;
+              const budgetYear = month < 5 ? currentYear - 1 : currentYear;
+              const yearKey = `${budgetYear}/${budgetYear + 1}`;
+              await state.setSelectedBudgetYear(yearKey);
+            }
           } catch (error) {
             console.error('Failed to initialize store:', error);
           }

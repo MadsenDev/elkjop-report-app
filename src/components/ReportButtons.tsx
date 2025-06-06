@@ -18,6 +18,26 @@ interface StoreState {
   repairTickets: any[];
   goals: any[];
   selectedWeek: string;
+  selectedBudgetYear: string;
+}
+
+interface PDFGenerationResult {
+  success: boolean;
+  path?: string;
+  error?: string;
+}
+
+interface PDFGenerationParams {
+  selectedDay: Day;
+  selectedWeek: string;
+  avsAssignments: any[];
+  insuranceAgreements: any[];
+  precalibratedTVs: any[];
+  repairTickets: any[];
+  goalsData: any[];
+  prevWeekData: [any[], any[], any[], any[]];
+  budgetYearData: any;
+  budgetYearSettings: any;
 }
 
 export default function ReportButtons({ onDayReport, onWeekReport, selectedDay }: ReportButtonsProps) {
@@ -27,9 +47,10 @@ export default function ReportButtons({ onDayReport, onWeekReport, selectedDay }
   const repairTickets = useReportStore((state: StoreState) => state.repairTickets);
   const goalsData = useReportStore((state: StoreState) => state.goals);
   const selectedWeek = useReportStore((state: StoreState) => state.selectedWeek);
+  const selectedBudgetYear = useReportStore((state: StoreState) => state.selectedBudgetYear);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [errorDetails, setErrorDetails] = useState<{message: string, stack?: string, name?: string} | null>(null);
+  const [errorDetails, setErrorDetails] = useState<{message: string} | null>(null);
   const [errorModalOpen, setErrorModalOpen] = useState(false);
 
   const handlePDFClick = async () => {
@@ -39,6 +60,12 @@ export default function ReportButtons({ onDayReport, onWeekReport, selectedDay }
     setErrorModalOpen(false);
     
     try {
+      console.log('Starting PDF generation with:', {
+        selectedDay,
+        selectedWeek,
+        selectedBudgetYear
+      });
+
       // Calculate previous week
       const [year, weekNumber] = selectedWeek.split('-').map(Number);
       const getPreviousWeek = (year: number, week: number) => {
@@ -51,6 +78,8 @@ export default function ReportButtons({ onDayReport, onWeekReport, selectedDay }
       const prevWeek = getPreviousWeek(year, weekNumber);
       const prevWeekKey = `${prevWeek.year}-${String(prevWeek.week).padStart(2, '0')}`;
       
+      console.log('Fetching previous week data for:', prevWeekKey);
+      
       // Fetch previous week's data
       const [prevAVS, prevInsurance, prevPrecalibrated, prevRepair] = await Promise.all([
         db.getAVSAssignments(prevWeekKey),
@@ -59,7 +88,26 @@ export default function ReportButtons({ onDayReport, onWeekReport, selectedDay }
         db.getRepairTickets(prevWeekKey)
       ]);
 
-      const result = await window.electron.generatePDF({
+      console.log('Previous week data:', {
+        prevAVS,
+        prevInsurance,
+        prevPrecalibrated,
+        prevRepair
+      });
+
+      // Get budget year data
+      console.log('Fetching budget year data for:', selectedBudgetYear);
+      const [budgetYearData, budgetYearSettings] = await Promise.all([
+        db.getBudgetYearData(selectedBudgetYear),
+        db.getBudgetYear(selectedBudgetYear)
+      ]);
+
+      console.log('Budget year data:', {
+        budgetYearData,
+        budgetYearSettings
+      });
+
+      const params: PDFGenerationParams = {
         selectedDay,
         selectedWeek,
         avsAssignments,
@@ -67,12 +115,18 @@ export default function ReportButtons({ onDayReport, onWeekReport, selectedDay }
         precalibratedTVs,
         repairTickets,
         goalsData,
-        prevWeekData: [prevAVS || [], prevInsurance || [], prevPrecalibrated || [], prevRepair || []]
-      });
+        prevWeekData: [prevAVS || [], prevInsurance || [], prevPrecalibrated || [], prevRepair || []],
+        budgetYearData,
+        budgetYearSettings
+      };
+
+      console.log('Sending data to Electron:', params);
+
+      const result = await window.electron.generatePDF(params) as PDFGenerationResult;
 
       if (!result.success) {
         setError(result.error || 'Failed to generate PDF');
-        setErrorDetails({ message: result.error, stack: result.stack, name: result.name });
+        setErrorDetails({ message: result.error || 'Failed to generate PDF' });
         setErrorModalOpen(true);
         throw new Error(result.error || 'Failed to generate PDF');
       }
@@ -121,13 +175,7 @@ export default function ReportButtons({ onDayReport, onWeekReport, selectedDay }
         isOpen={errorModalOpen}
         onClose={() => setErrorModalOpen(false)}
         title="PDF Export Error"
-        message={errorDetails ? (
-          <div>
-            <div className="mb-2 text-red-600 font-semibold">{errorDetails.message}</div>
-            {errorDetails.name && <div className="mb-1 text-xs text-gray-500">Type: {errorDetails.name}</div>}
-            {errorDetails.stack && <pre className="text-xs text-gray-400 whitespace-pre-wrap overflow-x-auto max-h-48">{errorDetails.stack}</pre>}
-          </div>
-        ) : error}
+        message={errorDetails?.message || error || ''}
         noFooter
       />
     </>
