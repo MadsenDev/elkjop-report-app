@@ -15,6 +15,7 @@ import ResetLoadingScreen from './ResetLoadingScreen';
 import elkjopLogoWhite from '../assets/elkjop_logo_white.png';
 import { useDisplaySettings } from '../contexts/DisplaySettingsContext';
 import TitleBar from './TitleBar';
+import { format } from 'date-fns';
 
 declare global {
   interface Window {
@@ -90,6 +91,16 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
   const precalibratedTVs = useReportStore((state) => state.precalibratedTVs);
   const repairTickets = useReportStore((state) => state.repairTickets);
   const goals = useReportStore((state) => state.goals);
+  const weekDates = useReportStore((state) => state.weekDates);
+  const loadWeekDates = useReportStore((state) => state.loadWeekDates);
+
+  // Load week dates when component mounts
+  useEffect(() => {
+    const loadDates = async () => {
+      await loadWeekDates();
+    };
+    loadDates();
+  }, [loadWeekDates]);
 
   // Recalculate progress whenever any of the data changes
   useEffect(() => {
@@ -407,6 +418,7 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
                 {days.map((day) => {
                   const progress = dayProgresses[day];
                   const isGoalMet = progress >= 100;
+                  const date = weekDates[day];
                   return (
                     <button
                       key={day}
@@ -422,7 +434,12 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
                           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
-                          <span>{day}</span>
+                          <div className="flex flex-col">
+                            <span>{day}</span>
+                            {date && (
+                              <span className="text-xs opacity-75">{date}</span>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center space-x-2">
                           <div className="w-16 h-1.5 bg-white/20 rounded-full overflow-hidden">

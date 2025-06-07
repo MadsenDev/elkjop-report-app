@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.7] - 2025-06-06
+
+### Changed
+- Standardized number formatting in PDF reports:
+  - All percentage values now show 2 decimal places
+  - All count values (GM, sales, completed items) show whole numbers
+  - Monetary values maintain proper thousand separators
+
 ## [1.7.6] - 2025-06-05
 
 ### Changed

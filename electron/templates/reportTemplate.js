@@ -257,39 +257,39 @@ const getReportTemplate = ({
         <div class="grid">
           <div class="metric">
             <div class="metric-label">Gross Margin</div>
-            <div class="metric-value">${currentTotals.avs}</div>
+            <div class="metric-value">${currentTotals.avs.toFixed(0)}</div>
             <div class="metric-goal">Goal: ${goalsData.find(g => g.section === 'AVS')?.goals[5] || 0}</div>
             <div class="comparison ${currentTotals.avs >= prevTotals.avs ? 'positive' : 'negative'}">
-              vs Previous Week: <span class="comparison-value">${((currentTotals.avs - prevTotals.avs) / (prevTotals.avs || 1) * 100).toFixed(1)}%</span>
+              vs Previous Week: <span class="comparison-value">${((currentTotals.avs - prevTotals.avs) / (prevTotals.avs || 1) * 100).toFixed(0)}%</span>
             </div>
-            ${topAVS ? `<div class="top-performer">Top Performer: <strong>${topAVS[0]}</strong> (${topAVS[1].gm} GM, ${topAVS[1].sales} sales)</div>` : ''}
+            ${topAVS ? `<div class="top-performer">Top Performer: <strong>${topAVS[0]}</strong> (${topAVS[1].gm.toFixed(0)} GM, ${topAVS[1].sales} sales)</div>` : ''}
           </div>
           <div class="metric">
             <div class="metric-label">Insurance Agreements</div>
-            <div class="metric-value">${currentTotals.insurance}</div>
+            <div class="metric-value">${currentTotals.insurance.toFixed(0)}</div>
             <div class="metric-goal">Goal: ${goalsData.find(g => g.section === 'Insurance Agreements')?.goals[5] || 0}</div>
             <div class="comparison ${currentTotals.insurance >= prevTotals.insurance ? 'positive' : 'negative'}">
-              vs Previous Week: <span class="comparison-value">${((currentTotals.insurance - prevTotals.insurance) / (prevTotals.insurance || 1) * 100).toFixed(1)}%</span>
+              vs Previous Week: <span class="comparison-value">${((currentTotals.insurance - prevTotals.insurance) / (prevTotals.insurance || 1) * 100).toFixed(0)}%</span>
             </div>
-            ${topInsurance ? `<div class="top-performer">Top Performer: <strong>${topInsurance[0]}</strong> (${topInsurance[1]} sales)</div>` : ''}
+            ${topInsurance ? `<div class="top-performer">Top Performer: <strong>${topInsurance[0]}</strong> (${topInsurance[1].toFixed(0)} sales)</div>` : ''}
           </div>
           <div class="metric">
             <div class="metric-label">Precalibrated TVs</div>
-            <div class="metric-value">${currentTotals.precalibrated}</div>
+            <div class="metric-value">${currentTotals.precalibrated.toFixed(0)}</div>
             <div class="metric-goal">Goal: ${goalsData.find(g => g.section === 'Precalibrated TVs')?.goals[5] || 0}</div>
             <div class="comparison ${currentTotals.precalibrated >= prevTotals.precalibrated ? 'positive' : 'negative'}">
-              vs Previous Week: <span class="comparison-value">${((currentTotals.precalibrated - prevTotals.precalibrated) / (prevTotals.precalibrated || 1) * 100).toFixed(1)}%</span>
+              vs Previous Week: <span class="comparison-value">${((currentTotals.precalibrated - prevTotals.precalibrated) / (prevTotals.precalibrated || 1) * 100).toFixed(0)}%</span>
             </div>
-            ${topPrecalibrated ? `<div class="top-performer">Top Performer: <strong>${topPrecalibrated[0]}</strong> (${topPrecalibrated[1]} completed)</div>` : ''}
+            ${topPrecalibrated ? `<div class="top-performer">Top Performer: <strong>${topPrecalibrated[0]}</strong> (${topPrecalibrated[1].toFixed(0)} completed)</div>` : ''}
           </div>
           <div class="metric">
             <div class="metric-label">Repair Tickets Created</div>
-            <div class="metric-value">${currentTotals.repair}</div>
+            <div class="metric-value">${currentTotals.repair.toFixed(0)}</div>
             <div class="metric-goal">Goal: ${goalsData.find(g => g.section === 'RepairTickets')?.goals[5] || 0}</div>
             <div class="comparison ${currentTotals.repair >= prevTotals.repair ? 'positive' : 'negative'}">
-              vs Previous Week: <span class="comparison-value">${((currentTotals.repair - prevTotals.repair) / (prevTotals.repair || 1) * 100).toFixed(1)}%</span>
+              vs Previous Week: <span class="comparison-value">${((currentTotals.repair - prevTotals.repair) / (prevTotals.repair || 1) * 100).toFixed(0)}%</span>
             </div>
-            ${topRepair ? `<div class="top-performer">Top Performer: <strong>${topRepair[0]}</strong> (${topRepair[1]} created)</div>` : ''}
+            ${topRepair ? `<div class="top-performer">Top Performer: <strong>${topRepair[0]}</strong> (${topRepair[1].toFixed(0)} created)</div>` : ''}
           </div>
         </div>
         
@@ -307,67 +307,67 @@ const getReportTemplate = ({
             </tr>
             <tr>
               <td>Gross Margin</td>
-              <td>${currentTotals.avs}</td>
-              <td>${prevTotals.avs}</td>
+              <td>${currentTotals.avs.toFixed(0)}</td>
+              <td>${prevTotals.avs.toFixed(0)}</td>
               <td class="${currentTotals.avs >= prevTotals.avs ? 'positive' : 'negative'}">
-                ${((currentTotals.avs - prevTotals.avs) / (prevTotals.avs || 1) * 100).toFixed(1)}%
+                ${((currentTotals.avs - prevTotals.avs) / (prevTotals.avs || 1) * 100).toFixed(2)}%
               </td>
               <td>${goalsData.find(g => g.section === 'AVS')?.goals[5] || 0}</td>
               <td>
-                ${((currentTotals.avs / (goalsData.find(g => g.section === 'AVS')?.goals[5] || 1)) * 100).toFixed(1)}%
+                ${((currentTotals.avs / (goalsData.find(g => g.section === 'AVS')?.goals[5] || 1)) * 100).toFixed(2)}%
                 <div class="progress-bar">
                   <div class="progress-bar-fill" style="width: ${Math.min(((currentTotals.avs / (goalsData.find(g => g.section === 'AVS')?.goals[5] || 1)) * 100), 100)}%"></div>
                 </div>
               </td>
-              <td>${topAVS ? `${topAVS[0]} (${topAVS[1].gm} GM)` : 'N/A'}</td>
+              <td>${topAVS ? `${topAVS[0]} (${topAVS[1].gm.toFixed(0)} GM)` : 'N/A'}</td>
             </tr>
             <tr>
               <td>Insurance Agreements</td>
-              <td>${currentTotals.insurance}</td>
-              <td>${prevTotals.insurance}</td>
+              <td>${currentTotals.insurance.toFixed(0)}</td>
+              <td>${prevTotals.insurance.toFixed(0)}</td>
               <td class="${currentTotals.insurance >= prevTotals.insurance ? 'positive' : 'negative'}">
-                ${((currentTotals.insurance - prevTotals.insurance) / (prevTotals.insurance || 1) * 100).toFixed(1)}%
+                ${((currentTotals.insurance - prevTotals.insurance) / (prevTotals.insurance || 1) * 100).toFixed(2)}%
               </td>
               <td>${goalsData.find(g => g.section === 'Insurance Agreements')?.goals[5] || 0}</td>
               <td>
-                ${((currentTotals.insurance / (goalsData.find(g => g.section === 'Insurance Agreements')?.goals[5] || 1)) * 100).toFixed(1)}%
+                ${((currentTotals.insurance / (goalsData.find(g => g.section === 'Insurance Agreements')?.goals[5] || 1)) * 100).toFixed(2)}%
                 <div class="progress-bar">
                   <div class="progress-bar-fill" style="width: ${Math.min(((currentTotals.insurance / (goalsData.find(g => g.section === 'Insurance Agreements')?.goals[5] || 1)) * 100), 100)}%"></div>
                 </div>
               </td>
-              <td>${topInsurance ? `${topInsurance[0]} (${topInsurance[1]} sales)` : 'N/A'}</td>
+              <td>${topInsurance ? `${topInsurance[0]} (${topInsurance[1].toFixed(0)} sales)` : 'N/A'}</td>
             </tr>
             <tr>
               <td>Precalibrated TVs</td>
-              <td>${currentTotals.precalibrated}</td>
-              <td>${prevTotals.precalibrated}</td>
+              <td>${currentTotals.precalibrated.toFixed(0)}</td>
+              <td>${prevTotals.precalibrated.toFixed(0)}</td>
               <td class="${currentTotals.precalibrated >= prevTotals.precalibrated ? 'positive' : 'negative'}">
-                ${((currentTotals.precalibrated - prevTotals.precalibrated) / (prevTotals.precalibrated || 1) * 100).toFixed(1)}%
+                ${((currentTotals.precalibrated - prevTotals.precalibrated) / (prevTotals.precalibrated || 1) * 100).toFixed(2)}%
               </td>
               <td>${goalsData.find(g => g.section === 'Precalibrated TVs')?.goals[5] || 0}</td>
               <td>
-                ${((currentTotals.precalibrated / (goalsData.find(g => g.section === 'Precalibrated TVs')?.goals[5] || 1)) * 100).toFixed(1)}%
+                ${((currentTotals.precalibrated / (goalsData.find(g => g.section === 'Precalibrated TVs')?.goals[5] || 1)) * 100).toFixed(2)}%
                 <div class="progress-bar">
                   <div class="progress-bar-fill" style="width: ${Math.min(((currentTotals.precalibrated / (goalsData.find(g => g.section === 'Precalibrated TVs')?.goals[5] || 1)) * 100), 100)}%"></div>
                 </div>
               </td>
-              <td>${topPrecalibrated ? `${topPrecalibrated[0]} (${topPrecalibrated[1]} completed)` : 'N/A'}</td>
+              <td>${topPrecalibrated ? `${topPrecalibrated[0]} (${topPrecalibrated[1].toFixed(0)} completed)` : 'N/A'}</td>
             </tr>
             <tr>
               <td>Repair Tickets</td>
-              <td>${currentTotals.repair}</td>
-              <td>${prevTotals.repair}</td>
+              <td>${currentTotals.repair.toFixed(0)}</td>
+              <td>${prevTotals.repair.toFixed(0)}</td>
               <td class="${currentTotals.repair >= prevTotals.repair ? 'positive' : 'negative'}">
-                ${((currentTotals.repair - prevTotals.repair) / (prevTotals.repair || 1) * 100).toFixed(1)}%
+                ${((currentTotals.repair - prevTotals.repair) / (prevTotals.repair || 1) * 100).toFixed(2)}%
               </td>
               <td>${goalsData.find(g => g.section === 'RepairTickets')?.goals[5] || 0}</td>
               <td>
-                ${((currentTotals.repair / (goalsData.find(g => g.section === 'RepairTickets')?.goals[5] || 1)) * 100).toFixed(1)}%
+                ${((currentTotals.repair / (goalsData.find(g => g.section === 'RepairTickets')?.goals[5] || 1)) * 100).toFixed(2)}%
                 <div class="progress-bar">
                   <div class="progress-bar-fill" style="width: ${Math.min(((currentTotals.repair / (goalsData.find(g => g.section === 'RepairTickets')?.goals[5] || 1)) * 100), 100)}%"></div>
                 </div>
               </td>
-              <td>${topRepair ? `${topRepair[0]} (${topRepair[1]} created)` : 'N/A'}</td>
+              <td>${topRepair ? `${topRepair[0]} (${topRepair[1].toFixed(0)} created)` : 'N/A'}</td>
             </tr>
           </table>
         </div>
@@ -407,12 +407,12 @@ const getReportTemplate = ({
             </div>
             <div class="progress-details">
               <span>Week ${budgetYearProgress.weekNum} of 52</span>
-              <span>${budgetYearProgress.yearProgress.toFixed(1)}% Complete</span>
+              <span>${budgetYearProgress.yearProgress.toFixed(0)}% Complete</span>
             </div>
             <div class="progress-status ${budgetYearProgress.progressDifference >= 0 ? 'ahead' : 'behind'}">
               ${budgetYearProgress.progressDifference >= 0 
-                ? `Ahead of schedule by ${budgetYearProgress.progressDifference.toFixed(1)}%` 
-                : `Behind schedule by ${Math.abs(budgetYearProgress.progressDifference).toFixed(1)}%`}
+                ? `Ahead of schedule by ${budgetYearProgress.progressDifference.toFixed(0)}%` 
+                : `Behind schedule by ${Math.abs(budgetYearProgress.progressDifference).toFixed(0)}%`}
             </div>
           </div>
         </div>

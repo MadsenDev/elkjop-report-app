@@ -55,8 +55,45 @@ export default function WeekPicker() {
             const [startYear] = selectedBudgetYear.split('/');
             const firstWeek = `${selectedBudgetYear}-01`;
             setSelectedWeek(firstWeek);
+            // Set initial week dates
+            const budgetYear = parseInt(startYear);
+            const budgetYearStart = new Date(budgetYear, 4, 1); // May 1st
+            const weekStart = addDays(budgetYearStart, 0); // Week 1
+            const start = startOfWeek(weekStart, { weekStartsOn: 1 });
+            
+            const dates = {
+              Monday: format(addDays(start, 0), 'dd.MM'),
+              Tuesday: format(addDays(start, 1), 'dd.MM'),
+              Wednesday: format(addDays(start, 2), 'dd.MM'),
+              Thursday: format(addDays(start, 3), 'dd.MM'),
+              Friday: format(addDays(start, 4), 'dd.MM'),
+              Saturday: format(addDays(start, 5), 'dd.MM')
+            };
+            
+            await useReportStore.getState().setWeekDates(dates);
           } else {
-            setSelectedWeek(getCurrentWeekKey());
+            const currentWeek = getCurrentWeekKey();
+            setSelectedWeek(currentWeek);
+            // Set current week dates
+            const [yearPart, weekNum] = currentWeek.split('-');
+            const [startYear] = yearPart.split('/');
+            const budgetYear = parseInt(startYear);
+            const weekNumber = parseInt(weekNum);
+            
+            const budgetYearStart = new Date(budgetYear, 4, 1); // May 1st
+            const weekStart = addDays(budgetYearStart, (weekNumber - 1) * 7);
+            const start = startOfWeek(weekStart, { weekStartsOn: 1 });
+            
+            const dates = {
+              Monday: format(addDays(start, 0), 'dd.MM'),
+              Tuesday: format(addDays(start, 1), 'dd.MM'),
+              Wednesday: format(addDays(start, 2), 'dd.MM'),
+              Thursday: format(addDays(start, 3), 'dd.MM'),
+              Friday: format(addDays(start, 4), 'dd.MM'),
+              Saturday: format(addDays(start, 5), 'dd.MM')
+            };
+            
+            await useReportStore.getState().setWeekDates(dates);
           }
         }
       } catch (error) {
@@ -119,9 +156,32 @@ export default function WeekPicker() {
     }
   };
 
-  const handleWeekSelect = (week: string) => {
+  const handleWeekSelect = async (week: string) => {
     setSelectedWeek(week);
     setIsOpen(false);
+
+    // Calculate dates using the same logic as formatWeekLabel
+    const [yearPart, weekNum] = week.split('-');
+    const [startYear] = yearPart.split('/');
+    const budgetYear = parseInt(startYear);
+    const weekNumber = parseInt(weekNum);
+    
+    // Calculate the actual date for this week
+    const budgetYearStart = new Date(budgetYear, 4, 1); // May 1st
+    const weekStart = addDays(budgetYearStart, (weekNumber - 1) * 7);
+    const start = startOfWeek(weekStart, { weekStartsOn: 1 });
+    
+    // Generate dates for each day of the week
+    const dates = {
+      Monday: format(addDays(start, 0), 'dd.MM'),
+      Tuesday: format(addDays(start, 1), 'dd.MM'),
+      Wednesday: format(addDays(start, 2), 'dd.MM'),
+      Thursday: format(addDays(start, 3), 'dd.MM'),
+      Friday: format(addDays(start, 4), 'dd.MM'),
+      Saturday: format(addDays(start, 5), 'dd.MM')
+    };
+    
+    await useReportStore.getState().setWeekDates(dates);
   };
 
   // Get the weeks to display based on the settings and selected budget year

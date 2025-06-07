@@ -67,7 +67,11 @@ export default function ReportButtons({ onDayReport, onWeekReport, selectedDay }
       });
 
       // Calculate previous week
-      const [year, weekNumber] = selectedWeek.split('-').map(Number);
+      const [yearPart, weekNum] = selectedWeek.split('-');
+      const [startYear] = yearPart.split('/');
+      const year = parseInt(startYear);
+      const weekNumber = parseInt(weekNum);
+      
       const getPreviousWeek = (year: number, week: number) => {
         if (week === 1) {
           return { year: year - 1, week: 52 };
@@ -76,7 +80,7 @@ export default function ReportButtons({ onDayReport, onWeekReport, selectedDay }
       };
       
       const prevWeek = getPreviousWeek(year, weekNumber);
-      const prevWeekKey = `${prevWeek.year}-${String(prevWeek.week).padStart(2, '0')}`;
+      const prevWeekKey = `${prevWeek.year}/${prevWeek.year + 1}-${String(prevWeek.week).padStart(2, '0')}`;
       
       console.log('Fetching previous week data for:', prevWeekKey);
       
