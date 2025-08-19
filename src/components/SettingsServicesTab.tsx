@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Service } from '../store';
 import useReportStore from '../store';
 import { db } from '../services/db';
@@ -9,6 +9,7 @@ export default function SettingsServicesTab() {
   const { services, loadServices } = useReportStore();
   const [localServices, setLocalServices] = useState<Service[]>(services);
   const [isSaving, setIsSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleServiceChange = (idx: number, field: keyof Service, value: string | number) => {
     const newServices = [...localServices];
@@ -39,6 +40,24 @@ export default function SettingsServicesTab() {
     }
   };
 
+  const filteredServices = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return localServices.map((s, idx) => ({ service: s, idx }));
+
+    return localServices
+      .map((s, idx) => ({ service: s, idx }))
+      .filter(({ service }) => {
+        const id = (service.id ?? '').toString().toLowerCase();
+        const price = Number.isFinite(service.price) ? String(service.price) : '';
+        const cost = Number.isFinite(service.cost) ? String(service.cost) : '';
+        return (
+          id.includes(query) ||
+          price.includes(query) ||
+          cost.includes(query)
+        );
+      });
+  }, [localServices, searchQuery]);
+
   return (
     <div className="space-y-6">
       {/* Sticky header with title and actions */}
@@ -46,6 +65,13 @@ export default function SettingsServicesTab() {
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Services Management</h2>
           <div className="flex items-center gap-4">
+            <Input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search (id, price, cost)"
+              className="bg-gray-50 dark:bg-gray-900 w-64"
+            />
             <Button
               onClick={handleSaveServices}
               color="green"
@@ -83,7 +109,7 @@ export default function SettingsServicesTab() {
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Cost</span>
             </div>
           </div>
-          {localServices.map((service, idx) => (
+          {filteredServices.map(({ service, idx }) => (
             <div key={idx} className="p-4 flex items-center gap-4">
               <div className="flex-1 grid grid-cols-12 gap-4">
                 <div className="col-span-5">

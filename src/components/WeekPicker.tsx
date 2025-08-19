@@ -73,7 +73,7 @@ export default function WeekPicker() {
             await useReportStore.getState().setWeekDates(dates);
           } else {
             const currentWeek = getCurrentWeekKey();
-            setSelectedWeek(currentWeek);
+          setSelectedWeek(currentWeek);
             // Set current week dates
             const [yearPart, weekNum] = currentWeek.split('-');
             const [startYear] = yearPart.split('/');
@@ -170,7 +170,7 @@ export default function WeekPicker() {
     const budgetYearStart = new Date(budgetYear, 4, 1); // May 1st
     const weekStart = addDays(budgetYearStart, (weekNumber - 1) * 7);
     const start = startOfWeek(weekStart, { weekStartsOn: 1 });
-    
+
     // Generate dates for each day of the week
     const dates = {
       Monday: format(addDays(start, 0), 'dd.MM'),

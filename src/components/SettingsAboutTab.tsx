@@ -1,14 +1,23 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import elkjopLogo from '../assets/elkjop_logo.png';
 import { VERSION } from '../config/version';
+import { useAppUpdates } from '../hooks/useAppUpdates';
 
-interface AboutSettingsProps {
-  settings: any;
-  updateSettings: (settings: Partial<any>) => void;
-}
+export default function SettingsAboutTab() {
+  const [isChecking, setIsChecking] = useState(false);
+  const { checkForUpdates, updateStatus } = useAppUpdates();
 
-export default function SettingsAboutTab({ settings, updateSettings }: AboutSettingsProps) {
+  const handleCheckForUpdates = async () => {
+    setIsChecking(true);
+    try {
+      await checkForUpdates();
+    } finally {
+      // Keep the loading state for a bit to show feedback
+      setTimeout(() => setIsChecking(false), 1000);
+    }
+  };
+
   return (
     <div className="relative">
       {/* Main Content */}
@@ -32,16 +41,33 @@ export default function SettingsAboutTab({ settings, updateSettings }: AboutSett
               <span>Personal Project</span>
             </div>
           </div>
-          <a 
-            href="mailto:chris@madsens.dev" 
-            className="flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-elkjop-green bg-elkjop-green/5 hover:bg-elkjop-green/10 rounded-lg transition-colors"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            Contact
-          </a>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleCheckForUpdates}
+              disabled={isChecking}
+              className="flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ArrowPathIcon className={`w-3.5 h-3.5 ${isChecking ? 'animate-spin' : ''}`} />
+              {isChecking ? 'Checking...' : 'Check for Updates'}
+            </button>
+            <a 
+              href="mailto:chris@madsens.dev" 
+              className="flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-elkjop-green bg-elkjop-green/5 hover:bg-elkjop-green/10 rounded-lg transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Contact
+            </a>
+          </div>
         </div>
+
+        {/* Update Status */}
+        {updateStatus && (
+          <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+            <p className="text-sm text-blue-700 dark:text-blue-300">{updateStatus}</p>
+          </div>
+        )}
 
         {/* Description */}
         <div className="mb-6 p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
@@ -164,7 +190,7 @@ export default function SettingsAboutTab({ settings, updateSettings }: AboutSett
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-medium text-gray-900 dark:text-white">Technical Stack</h3>
                   <div className="mt-1 flex flex-wrap gap-2">
-                    {['React + TypeScript', 'Tauri', 'Tailwind CSS'].map((tech) => (
+                    {['React + TypeScript', 'Electron', 'Tailwind CSS'].map((tech) => (
                       <span key={tech} className="inline-flex items-center text-xs text-gray-500 dark:text-gray-400">
                         <svg className="w-3 h-3 mr-1 text-elkjop-green flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />

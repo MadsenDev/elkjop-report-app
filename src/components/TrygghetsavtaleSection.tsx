@@ -24,6 +24,7 @@ export default function InsuranceAgreementSection({ day }: InsuranceAgreementSec
   const setInsuranceAgreement = useReportStore((state) => state.setInsuranceAgreement);
   const setInsuranceAgreements = useReportStore((state) => state.setInsuranceAgreements);
   const people = useReportStore((state) => state.people);
+  const editInsuranceAgreement = useReportStore((state) => state.editInsuranceAgreement);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,9 +44,7 @@ export default function InsuranceAgreementSection({ day }: InsuranceAgreementSec
     };
 
     if (editingIndex !== null) {
-      // When editing, replace all existing agreements for this person with a single new one
-      const filteredAgreements = insuranceAgreements.filter(a => a.person !== formData.person || a.day !== day);
-      useReportStore.setState({ insuranceAgreements: [...filteredAgreements, newAgreement] });
+      editInsuranceAgreement(editingIndex, newAgreement);
     } else {
       setInsuranceAgreement(newAgreement);
     }

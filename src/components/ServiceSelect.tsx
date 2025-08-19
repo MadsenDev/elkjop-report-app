@@ -5,6 +5,7 @@ import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid';
 interface Service {
   id: string;
   price: number;
+  cost?: number;
 }
 
 interface ServiceSelectProps {
@@ -12,9 +13,10 @@ interface ServiceSelectProps {
   onChange: (value: string) => void;
   label?: string;
   services: Service[];
+  onCreateRequest?: (proposedId: string) => void;
 }
 
-export default function ServiceSelect({ value, onChange, label = 'Select Service', services }: ServiceSelectProps) {
+export default function ServiceSelect({ value, onChange, label = 'Select Service', services, onCreateRequest }: ServiceSelectProps) {
   const [query, setQuery] = useState('');
 
   const filteredServices =
@@ -54,8 +56,14 @@ export default function ServiceSelect({ value, onChange, label = 'Select Service
           >
             <Combobox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white dark:bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
               {filteredServices.length === 0 && query !== '' ? (
-                <div className="relative cursor-default select-none py-2 px-4 text-gray-700 dark:text-gray-300">
-                  Nothing found.
+                <div
+                  className="relative cursor-pointer select-none py-2 px-4 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    onCreateRequest && onCreateRequest(query);
+                  }}
+                >
+                  Add "{query}" as new service
                 </div>
               ) : (
                 filteredServices.map((service) => (

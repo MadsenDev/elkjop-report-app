@@ -51,7 +51,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   const handleImportConfig = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      const file = event.target.files?.[0];
+    const file = event.target.files?.[0];
       if (file) {
         await useReportStore.getState().importData(file);
       }
@@ -72,8 +72,8 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     try {
       const file = event.target.files?.[0];
       if (file) {
-        await useReportStore.getState().importUserData(file);
-      }
+      await useReportStore.getState().importUserData(file);
+    }
     } catch (error) {
       console.error('Failed to import user data:', error);
     }
@@ -131,7 +131,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       case 'Notifications':
         return <SettingsNotificationsTab settings={settings} updateSettings={updateSettings} />;
       case 'About':
-        return <SettingsAboutTab settings={settings} updateSettings={updateSettings} />;
+        return <SettingsAboutTab />;
       case 'Changelog':
         return (
           <div className="settings-changelog">

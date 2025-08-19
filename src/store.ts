@@ -447,6 +447,16 @@ const useReportStore = create<ReportState>()(
         const text = await file.text();
         const data = JSON.parse(text);
         await db.importData(data);
+        
+        // Reload all configuration data after import
+        await Promise.all([
+          get().loadPeople(),
+          get().loadServices(),
+          get().loadGoals(),
+          get().loadSettings(),
+          get().loadBudgetYears()
+        ]);
+        
         await get().loadAllData();
       },
       exportUserData: async () => {

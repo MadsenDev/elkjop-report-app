@@ -20,6 +20,7 @@ export default function RepairTicketsSection({ day }: RepairTicketsSectionProps)
   const setRepairTicket = useReportStore((state) => state.setRepairTicket);
   const setRepairTickets = useReportStore((state) => state.setRepairTickets);
   const people = useReportStore((state) => state.people);
+  const editRepairTicket = useReportStore((state) => state.editRepairTicket);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,9 +40,7 @@ export default function RepairTicketsSection({ day }: RepairTicketsSectionProps)
     };
 
     if (editingIndex !== null) {
-      // When editing, replace all existing tickets for this person with a single new ticket
-      const filteredTickets = repairTickets.filter(t => t.person !== formData.person || t.day !== day);
-      useReportStore.setState({ repairTickets: [...filteredTickets, newTicket] });
+      editRepairTicket(editingIndex, newTicket);
     } else {
       setRepairTicket(newTicket);
     }

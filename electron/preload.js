@@ -16,7 +16,7 @@ try {
       // Event listeners
       on: (channel, callback) => {
         console.log('Registering listener for channel:', channel);
-        const validChannels = ['window-maximize', 'window-unmaximize'];
+        const validChannels = ['window-maximize', 'window-unmaximize', 'update-status'];
         if (validChannels.includes(channel)) {
           // Deliberately strip event as it includes `sender` 
           ipcRenderer.on(channel, (event, ...args) => callback(...args));
@@ -42,7 +42,13 @@ try {
       generatePDF: (data) => ipcRenderer.invoke('generate-pdf', data),
       
       // Changelog
-      getChangelog: () => ipcRenderer.invoke('get-changelog')
+      getChangelog: () => ipcRenderer.invoke('get-changelog'),
+      
+      // Update methods
+      checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+      downloadUpdate: () => ipcRenderer.invoke('download-update'),
+      installUpdate: () => ipcRenderer.invoke('install-update'),
+      skipUpdate: (version) => ipcRenderer.invoke('skip-update', version)
     }
   );
   console.log('Preload script completed successfully');

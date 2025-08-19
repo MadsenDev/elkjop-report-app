@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Person } from '../store';
 import useReportStore from '../store';
 import { db } from '../services/db';
@@ -9,6 +9,7 @@ export default function SettingsPeopleTab() {
   const { people, loadPeople } = useReportStore();
   const [localPeople, setLocalPeople] = useState<Person[]>(people);
   const [isSaving, setIsSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handlePersonChange = (idx: number, field: keyof Person, value: string) => {
     const newPeople = [...localPeople];
@@ -39,6 +40,24 @@ export default function SettingsPeopleTab() {
     }
   };
 
+  const filteredPeople = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return localPeople.map((p, idx) => ({ person: p, idx }));
+
+    return localPeople
+      .map((p, idx) => ({ person: p, idx }))
+      .filter(({ person }) => {
+        const code = person.code?.toLowerCase() || '';
+        const first = person.firstName?.toLowerCase() || '';
+        const last = person.lastName?.toLowerCase() || '';
+        return (
+          code.includes(query) ||
+          first.includes(query) ||
+          last.includes(query)
+        );
+      });
+  }, [localPeople, searchQuery]);
+
   return (
     <div className="space-y-6">
       {/* Sticky header with title and actions */}
@@ -46,6 +65,13 @@ export default function SettingsPeopleTab() {
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">People Management</h2>
           <div className="flex items-center gap-4">
+            <Input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search (code, first, last)"
+              className="bg-gray-50 dark:bg-gray-900 w-64"
+            />
             <Button
               onClick={handleSavePeople}
               color="green"
@@ -83,7 +109,7 @@ export default function SettingsPeopleTab() {
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Last Name</span>
             </div>
           </div>
-          {localPeople.map((person, idx) => (
+          {filteredPeople.map(({ person, idx }) => (
             <div key={idx} className="p-4 flex items-center gap-4">
               <div className="flex-1 grid grid-cols-12 gap-4">
                 <div className="col-span-3">

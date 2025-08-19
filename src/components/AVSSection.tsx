@@ -13,6 +13,7 @@ import ServiceSelect from "./ServiceSelect";
 import SectionModal from './ui/SectionModal';
 import NumberInput from './ui/NumberInput';
 import { FiPlus } from 'react-icons/fi';
+import { db } from '../services/db';
 
 interface AVSSectionProps {
   day: Day;
@@ -33,6 +34,7 @@ export default function AVSSection({ day }: AVSSectionProps) {
   const setAVSAssignments = useReportStore((state) => state.setAVSAssignments);
   const services = useReportStore((state) => state.services);
   const people = useReportStore((state) => state.people);
+  const loadServices = useReportStore((state) => state.loadServices);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({
@@ -43,6 +45,12 @@ export default function AVSSection({ day }: AVSSectionProps) {
     gmOverride: ''
   });
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [pendingNewServiceId, setPendingNewServiceId] = useState<string | null>(null);
+  const [newServicePrice, setNewServicePrice] = useState<number>(0);
+  const [newServiceCost, setNewServiceCost] = useState<number>(0);
+  const [showEditService, setShowEditService] = useState<boolean>(false);
+  const [editServicePrice, setEditServicePrice] = useState<number>(0);
+  const [editServiceCost, setEditServiceCost] = useState<number>(0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,6 +102,8 @@ export default function AVSSection({ day }: AVSSectionProps) {
     });
     setEditingIndex(index);
     setIsModalOpen(true);
+    setShowEditService(false);
+    setPendingNewServiceId(null);
   };
 
   const handleDelete = (index: number) => {
@@ -245,10 +255,142 @@ export default function AVSSection({ day }: AVSSectionProps) {
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Service</label>
           <ServiceSelect
             value={formData.serviceId}
-            onChange={(serviceId) => setFormData({ ...formData, serviceId })}
+            onChange={(serviceId) => {
+              setFormData({ ...formData, serviceId });
+              const s = services.find(x => x.id === serviceId);
+              if (s) {
+                setEditServicePrice(s.price);
+                setEditServiceCost((s as any).cost ?? 0);
+              }
+              setShowEditService(false);
+              setPendingNewServiceId(null);
+            }}
             label="Select a service"
             services={services}
+            onCreateRequest={(proposedId) => {
+              setPendingNewServiceId(proposedId);
+              setNewServicePrice(0);
+              setNewServiceCost(0);
+              setShowEditService(false);
+            }}
           />
+          {pendingNewServiceId && (
+            <div className="mt-3 p-3 rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-gray-900">
+              <div className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">Add new service</div>
+              <div className="grid grid-cols-3 gap-3 items-end">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">ID</label>
+                  <input
+                    type="text"
+                    value={pendingNewServiceId}
+                    onChange={(e) => setPendingNewServiceId(e.target.value)}
+                    className="mt-1 w-full rounded-md bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Price</label>
+                  <NumberInput
+                    value={newServicePrice}
+                    onChange={(v) => setNewServicePrice(v)}
+                    min={0}
+                    step={0.01}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Cost</label>
+                  <NumberInput
+                    value={newServiceCost}
+                    onChange={(v) => setNewServiceCost(v)}
+                    min={0}
+                    step={0.01}
+                  />
+                </div>
+              </div>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const id = (pendingNewServiceId || '').trim();
+                    if (!id) return;
+                    const exists = services.some(s => s.id.toLowerCase() === id.toLowerCase());
+                    const updated = exists
+                      ? services.map(s => s.id.toLowerCase() === id.toLowerCase() ? { ...s, id, price: newServicePrice, cost: newServiceCost } : s)
+                      : [...services, { id, price: newServicePrice, cost: newServiceCost } as any];
+                    await db.setServices(updated as any);
+                    await loadServices();
+                    setFormData({ ...formData, serviceId: id });
+                    setPendingNewServiceId(null);
+                    setEditServicePrice(newServicePrice);
+                    setEditServiceCost(newServiceCost);
+                  }}
+                  className="px-3 py-1.5 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  Save service
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPendingNewServiceId(null)}
+                  className="px-3 py-1.5 text-sm rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+          {formData.serviceId && !pendingNewServiceId && (
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={() => setShowEditService(v => !v)}
+                className="text-sm text-blue-700 dark:text-blue-400 hover:underline"
+              >
+                {showEditService ? 'Hide' : 'Update'} price/cost for this service
+              </button>
+              {showEditService && (
+                <div className="mt-2 grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Price</label>
+                    <NumberInput
+                      value={editServicePrice}
+                      onChange={(v) => setEditServicePrice(v)}
+                      min={0}
+                      step={0.01}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Cost</label>
+                    <NumberInput
+                      value={editServiceCost}
+                      onChange={(v) => setEditServiceCost(v)}
+                      min={0}
+                      step={0.01}
+                    />
+                  </div>
+                  <div className="col-span-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const id = formData.serviceId;
+                        const updated = services.map(s => s.id === id ? { ...s, price: editServicePrice, cost: editServiceCost } as any : s);
+                        await db.setServices(updated as any);
+                        await loadServices();
+                      }}
+                      className="px-3 py-1.5 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                    >
+                      Save changes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowEditService(false)}
+                      className="px-3 py-1.5 text-sm rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2 mb-4">

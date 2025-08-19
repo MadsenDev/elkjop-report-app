@@ -22,6 +22,12 @@ interface ElectronAPI {
   
   // Changelog
   getChangelog: () => Promise<string>;
+  
+  // Update methods
+  checkForUpdates: () => Promise<{ success: boolean; result?: any; error?: string }>;
+  downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
+  installUpdate: () => void;
+  skipUpdate: (version: string) => Promise<void>;
 }
 
 declare global {

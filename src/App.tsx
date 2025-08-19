@@ -15,12 +15,28 @@ import { VERSION } from './config/version';
 import { loadServices, loadPeople, loadGoals, loadWeekDates, loadAllData, loadSettings, loadAvailableWeeks } from './store';
 import TitleBar from './components/TitleBar';
 import { Day } from './types';
+import { useAppUpdates } from './hooks/useAppUpdates';
+import UpdateModal from './components/UpdateModal';
 
 function AppContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [initialDay, setInitialDay] = useState<Day>('Monday');
+
+  // Update functionality
+  const {
+    isUpdateModalOpen,
+    updateInfo,
+    isDownloading,
+    downloadProgress,
+    updateStatus,
+    checkForUpdates,
+    downloadUpdate,
+    skipUpdate,
+    remindLater,
+    closeUpdateModal
+  } = useAppUpdates();
 
   // Only access store data after initialization
   const selectedDay = useReportStore((state) => isInitialized ? state.selectedDay : initialDay);
@@ -120,15 +136,27 @@ function AppContent() {
       <TitleBar />
       <Layout selectedDay={selectedDay} onDayChange={setSelectedDay}>
         <div className="space-y-6">
-          <DaySummary day={selectedDay} />
+            <DaySummary day={selectedDay} />
           <div className="grid grid-cols-2 gap-6">
-            <AVSSection day={selectedDay} />
-            <InsuranceAgreementSection day={selectedDay} />
-            <PreklargjortTVSection day={selectedDay} />
-            <RepairTicketsSection day={selectedDay} />
+                <AVSSection day={selectedDay} />
+                <InsuranceAgreementSection day={selectedDay} />
+                <PreklargjortTVSection day={selectedDay} />
+                <RepairTicketsSection day={selectedDay} />
+            </div>
           </div>
-        </div>
-      </Layout>
+        </Layout>
+      
+      {/* Update Modal */}
+      <UpdateModal
+        isOpen={isUpdateModalOpen}
+        onClose={closeUpdateModal}
+        updateInfo={updateInfo || undefined}
+        onDownload={downloadUpdate}
+        onSkip={skipUpdate}
+        onRemindLater={remindLater}
+        isDownloading={isDownloading}
+        downloadProgress={downloadProgress}
+      />
     </div>
   );
 }

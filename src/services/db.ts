@@ -515,19 +515,22 @@ class DatabaseService {
       people,
       services,
       goals,
-      settings
+      settings,
+      budgetYears
     ] = await Promise.all([
       this.getPeople(),
       this.getServices(),
       this.getGoals(),
-      this.getSettings()
+      this.getSettings(),
+      this.getAllBudgetYears()
     ]);
 
     return {
       people,
       services,
       goals,
-      settings
+      settings,
+      budgetYears
     };
   }
 
@@ -536,13 +539,23 @@ class DatabaseService {
     services: ElkjopDB['services']['value'];
     goals: ElkjopDB['goals']['value'];
     settings?: ElkjopDB['settings']['value'];
+    budgetYears?: Record<string, ElkjopDB['budgetYears']['value']>;
   }) {
-    await Promise.all([
+    const importPromises = [
       this.setPeople(data.people),
       this.setServices(data.services),
       this.setGoals(data.goals),
       data.settings ? this.setSettings(data.settings) : Promise.resolve()
-    ]);
+    ];
+
+    // Import budget years if provided
+    if (data.budgetYears) {
+      for (const [yearKey, yearData] of Object.entries(data.budgetYears)) {
+        importPromises.push(this.setBudgetYear(yearKey, yearData));
+      }
+    }
+
+    await Promise.all(importPromises);
   }
 
   // New methods for user data export/import

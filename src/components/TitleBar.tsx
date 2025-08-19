@@ -31,19 +31,19 @@ export default function TitleBar({ isGoalMet = false }: TitleBarProps) {
 
   const handleMinimize = () => {
     if (isElectron) {
-      window.electron.minimize();
+    window.electron.minimize();
     }
   };
 
   const handleMaximize = () => {
     if (isElectron) {
-      window.electron.maximize();
+    window.electron.maximize();
     }
   };
 
   const handleClose = () => {
     if (isElectron) {
-      window.electron.close();
+    window.electron.close();
     }
   };
 
@@ -142,84 +142,84 @@ export default function TitleBar({ isGoalMet = false }: TitleBarProps) {
 
       {/* Window Controls */}
       {showWindowControls && (
-        <motion.div 
-          className="flex items-center gap-2" 
-          style={{ WebkitAppRegion: 'no-drag' as any }}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
+      <motion.div 
+        className="flex items-center gap-2" 
+        style={{ WebkitAppRegion: 'no-drag' as any }}
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <motion.button
+          onClick={handleMinimize}
+            className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
+              isGoalMet 
+                ? 'text-white hover:bg-white/20' 
+                : 'text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10'
+            }`}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
         >
-          <motion.button
-            onClick={handleMinimize}
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" />
+          </svg>
+        </motion.button>
+        <motion.button
+          onClick={handleMaximize}
             className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
               isGoalMet 
                 ? 'text-white hover:bg-white/20' 
                 : 'text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10'
             }`}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" />
-            </svg>
-          </motion.button>
-          <motion.button
-            onClick={handleMaximize}
-            className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
-              isGoalMet 
-                ? 'text-white hover:bg-white/20' 
-                : 'text-gray-600 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10'
-            }`}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <AnimatePresence mode="wait">
-              {isMaximized ? (
-                <motion.svg
-                  key="restore"
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  initial={{ opacity: 0, rotate: -180 }}
-                  animate={{ opacity: 1, rotate: 0 }}
-                  exit={{ opacity: 0, rotate: 180 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 3v3a2 2 0 01-2 2H3m18 0h-3a2 2 0 01-2-2V3m0 18v-3a2 2 0 012-2h3M3 16h3a2 2 0 012 2v3" />
-                </motion.svg>
-              ) : (
-                <motion.svg
-                  key="maximize"
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  initial={{ opacity: 0, rotate: 180 }}
-                  animate={{ opacity: 1, rotate: 0 }}
-                  exit={{ opacity: 0, rotate: -180 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
-                </motion.svg>
-              )}
-            </AnimatePresence>
-          </motion.button>
-          <motion.button
-            onClick={handleClose}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <AnimatePresence mode="wait">
+            {isMaximized ? (
+              <motion.svg
+                key="restore"
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                initial={{ opacity: 0, rotate: -180 }}
+                animate={{ opacity: 1, rotate: 0 }}
+                exit={{ opacity: 0, rotate: 180 }}
+                transition={{ duration: 0.2 }}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 3v3a2 2 0 01-2 2H3m18 0h-3a2 2 0 01-2-2V3m0 18v-3a2 2 0 012-2h3M3 16h3a2 2 0 012 2v3" />
+              </motion.svg>
+            ) : (
+              <motion.svg
+                key="maximize"
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                initial={{ opacity: 0, rotate: 180 }}
+                animate={{ opacity: 1, rotate: 0 }}
+                exit={{ opacity: 0, rotate: -180 }}
+                transition={{ duration: 0.2 }}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+              </motion.svg>
+            )}
+          </AnimatePresence>
+        </motion.button>
+        <motion.button
+          onClick={handleClose}
             className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
               isGoalMet 
                 ? 'text-white hover:bg-red-500/80' 
                 : 'text-gray-600 dark:text-white hover:bg-red-500 hover:text-white'
             }`}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </motion.button>
-        </motion.div>
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </motion.button>
+      </motion.div>
       )}
     </motion.div>
   );

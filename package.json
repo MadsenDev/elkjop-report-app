@@ -2,6 +2,11 @@
   "name": "elkjop-report-app",
   "private": true,
   "version": "1.7.7",
+  "description": "A specialized tool for Elkjøp aftersales operations team to generate daily and weekly reports",
+  "author": {
+    "name": "Christoffer Madsen",
+    "email": "chris@madsens.dev"
+  },
   "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
@@ -11,7 +16,8 @@
     "electron:dev": "vite build && concurrently \"vite\" \"wait-on tcp:5173 && electron .\"",
     "electron:build": "vite build && electron-builder",
     "update-version": "node scripts/update-version.js",
-    "postinstall": "node scripts/postinstall.js"
+    "postinstall": "node scripts/postinstall.js",
+    "publish-update": "node scripts/publish-update.js"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",
@@ -24,6 +30,7 @@
     "chart.js": "^4.4.2",
     "date-fns": "^4.1.0",
     "electron-store": "^8.2.0",
+    "electron-updater": "^6.6.2",
     "framer-motion": "^11.0.8",
     "html-to-image": "^1.11.13",
     "idb": "^8.0.3",
@@ -73,6 +80,14 @@
         "to": "assets"
       }
     ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "madsendev",
+        "repo": "elkjop-report-app",
+        "private": false
+      }
+    ],
     "win": {
       "target": [
         "nsis",
@@ -88,10 +103,11 @@
     },
     "linux": {
       "target": [
-        "AppImage",
-        "deb"
+        "AppImage"
       ],
-      "icon": "electron/icons/icon.png"
+      "icon": "electron/icons/icon.png",
+      "maintainer": "Chris Madsen <chris@madsens.dev>",
+      "category": "Utility"
     }
   }
 }

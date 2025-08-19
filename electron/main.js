@@ -3,11 +3,17 @@ const path = require('path');
 const fs = require('fs');
 const Store = require('electron-store');
 const { generatePDF } = require('./handlers/pdfHandler');
+const UpdateHandler = require('./handlers/updateHandler');
 
 const store = new Store();
 const isDev = process.env.NODE_ENV === 'development';
 
 let mainWindow;
+let updateHandler;
+
+// Ensure Windows uses the correct identity for taskbar grouping and pinned icons
+// Must match build.appId in package.json
+app.setAppUserModelId('dev.madsens.elkjopreportapp');
 
 function createWindow() {
   const preloadPath = path.join(__dirname, 'preload.js');
@@ -24,7 +30,9 @@ function createWindow() {
     },
     frame: false,
     titleBarStyle: 'hidden',
-    icon: path.join(__dirname, 'icons/icon.png'),
+    icon: process.platform === 'win32'
+      ? path.join(__dirname, 'icons/icon.ico')
+      : path.join(__dirname, 'icons/icon.png'),
     backgroundColor: '#ffffff'
   });
 
@@ -37,6 +45,11 @@ function createWindow() {
     mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+  }
+
+  // Initialize update handler (only in production)
+  if (!isDev) {
+    updateHandler = new UpdateHandler(mainWindow);
   }
 
   // Handle window controls
