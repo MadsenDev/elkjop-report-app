@@ -4,7 +4,7 @@ import { motion, HTMLMotionProps } from 'framer-motion';
 interface CardProps extends HTMLMotionProps<'div'> {
   title: string;
   children: ReactNode;
-  color?: 'blue' | 'green' | 'purple' | 'orange' | 'indigo';
+  color?: 'blue' | 'green' | 'purple' | 'orange' | 'indigo' | 'yellow';
   action?: ReactNode;
   description?: string;
   icon?: ReactNode;
@@ -72,6 +72,18 @@ const colorStyles = {
     chip: 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300',
     icon: 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400',
   },
+  yellow: {
+    bg: 'bg-yellow-50 dark:bg-yellow-900/30',
+    text: 'text-yellow-700 dark:text-yellow-400',
+    border: 'border-yellow-200 dark:border-yellow-800',
+    header: 'bg-gradient-to-r from-yellow-50 to-yellow-50/50 dark:from-yellow-900/50 dark:to-yellow-900/30',
+    title: 'text-yellow-700 dark:text-yellow-300',
+    accent: 'bg-yellow-600 dark:bg-yellow-500',
+    hover: 'hover:bg-yellow-700 dark:hover:bg-yellow-600',
+    ring: 'ring-yellow-500 dark:ring-yellow-400',
+    chip: 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300',
+    icon: 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-400',
+  },
 };
 
 const Card = ({ title, children, color = 'blue', action, description, icon, className = '', ...props }: CardProps) => {
@@ -110,7 +122,7 @@ const Card = ({ title, children, color = 'blue', action, description, icon, clas
 
 interface ChipProps {
   children: React.ReactNode;
-  color?: 'blue' | 'green' | 'purple' | 'orange';
+  color?: 'blue' | 'green' | 'purple' | 'orange' | 'yellow';
   onClick?: () => void;
   className?: string;
 }
@@ -121,6 +133,7 @@ export function Chip({ children, color = 'blue', onClick, className = '' }: Chip
     green: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
     purple: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
     orange: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+    yellow: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
   };
 
   return (
@@ -134,7 +147,7 @@ export function Chip({ children, color = 'blue', onClick, className = '' }: Chip
 }
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  color?: 'blue' | 'green' | 'purple' | 'orange';
+  color?: 'blue' | 'green' | 'purple' | 'orange' | 'yellow';
   size?: 'sm' | 'md' | 'lg';
   variant?: 'solid' | 'outline' | 'ghost';
   isLoading?: boolean;

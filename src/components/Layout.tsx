@@ -15,6 +15,7 @@ import ResetLoadingScreen from './ResetLoadingScreen';
 import elkjopLogoWhite from '../assets/elkjop_logo_white.png';
 import { useDisplaySettings } from '../contexts/DisplaySettingsContext';
 import TitleBar from './TitleBar';
+import MissingDataChecker from './MissingDataChecker';
 import { format } from 'date-fns';
 
 declare global {
@@ -93,6 +94,7 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
   const goals = useReportStore((state) => state.goals);
   const weekDates = useReportStore((state) => state.weekDates);
   const loadWeekDates = useReportStore((state) => state.loadWeekDates);
+  const setSelectedWeek = useReportStore((state) => state.setSelectedWeek);
 
   // Load week dates when component mounts
   useEffect(() => {
@@ -551,11 +553,17 @@ export default function Layout({ children, selectedDay, onDayChange }: LayoutPro
                       ))}
                     </motion.div>
                   </div>
-                  <ReportButtons
-                    onDayReport={handleDayReport}
-                    onWeekReport={handleWeekReportImage}
-                    selectedDay={selectedDay}
-                  />
+                  <div className="flex items-center gap-2">
+                    <MissingDataChecker 
+                      onNavigateToDay={onDayChange} 
+                      onNavigateToWeek={setSelectedWeek}
+                    />
+                    <ReportButtons
+                      onDayReport={handleDayReport}
+                      onWeekReport={handleWeekReportImage}
+                      selectedDay={selectedDay}
+                    />
+                  </div>
                 </div>
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
