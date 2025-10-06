@@ -17,7 +17,10 @@
     "electron:build": "vite build && electron-builder",
     "update-version": "node scripts/update-version.js",
     "postinstall": "node scripts/postinstall.js",
-    "publish-update": "node scripts/publish-update.js"
+    "publish-update": "node scripts/publish-update.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",
@@ -62,6 +65,7 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5.2.2",
     "vite": "^5.1.6",
+    "vitest": "^1.5.0",
     "wait-on": "^7.2.0"
   },
   "build": {
