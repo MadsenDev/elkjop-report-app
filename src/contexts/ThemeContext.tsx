@@ -1,35 +1,40 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useCallback, ReactNode, useRef } from 'react';
 import useReportStore from '../store';
 
 interface ThemeContextType {
   isDarkMode: boolean;
-  toggleTheme: () => void;
+  toggleTheme: () => Promise<void>;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const storeSettings = useReportStore(state => state.settings.theme);
-  const updateStoreSettings = useReportStore(state => state.updateSettings);
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Check if user has a theme preference in localStorage
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      return savedTheme === 'dark';
-    }
-    // Check system preference
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
+  const isDarkMode = useReportStore((state) => state.settings.theme.darkMode);
+  const updateSettings = useReportStore((state) => state.updateSettings);
+  const hasSyncedPreference = useRef(false);
 
   useEffect(() => {
-    // Update localStorage and document class when theme changes
+    if (hasSyncedPreference.current) {
+      return;
+    }
+
+    hasSyncedPreference.current = true;
+    const stored = localStorage.getItem('theme');
+    const preferred = stored !== null ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    if (preferred !== isDarkMode) {
+      void updateSettings({ theme: { darkMode: preferred } });
+    }
+  }, [isDarkMode, updateSettings]);
+
+  useEffect(() => {
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
     document.documentElement.classList.toggle('dark', isDarkMode);
   }, [isDarkMode]);
 
-  const toggleTheme = () => {
-    setIsDarkMode(prev => !prev);
-  };
+  const toggleTheme = useCallback(async () => {
+    await updateSettings({ theme: { darkMode: !isDarkMode } });
+  }, [isDarkMode, updateSettings]);
 
   return (
     <ThemeContext.Provider value={{ isDarkMode, toggleTheme }}>
@@ -44,4 +49,4 @@ export function useTheme() {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
-} 
+}

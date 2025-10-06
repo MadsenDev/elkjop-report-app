@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react';
-import useReportStore from './store';
+import useReportStore, {
+  loadAllData,
+  loadAvailableWeeks,
+  loadGoals,
+  loadPeople,
+  loadServices,
+  loadSettings,
+  loadWeekDates,
+} from './store';
 import Layout from './components/Layout';
 import DaySummary from './components/DaySummary';
 import AVSSection from './components/AVSSection';
@@ -8,102 +16,73 @@ import PreklargjortTVSection from './components/PreklargjortTVSection';
 import RepairTicketsSection from './components/RepairTicketsSection';
 import LoadingScreen from './components/LoadingScreen';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { DisplaySettingsProvider, useDisplaySettings } from './contexts/DisplaySettingsContext';
+import { DisplaySettingsProvider } from './contexts/DisplaySettingsContext';
 import { ToastProvider } from './contexts/ToastContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import { VERSION } from './config/version';
-import { loadServices, loadPeople, loadGoals, loadWeekDates, loadAllData, loadSettings, loadAvailableWeeks } from './store';
 import TitleBar from './components/TitleBar';
-import { Day } from './types';
 import { useAppUpdates } from './hooks/useAppUpdates';
 import UpdateModal from './components/UpdateModal';
+import { useAutoSelectDay } from './hooks/useAutoSelectDay';
 
 function AppContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [initialDay, setInitialDay] = useState<Day>('Monday');
 
-  // Update functionality
+  const selectedDay = useReportStore((state) => state.selectedDay);
+  const setSelectedDay = useReportStore((state) => state.setSelectedDay);
+
+  useAutoSelectDay(isInitialized);
+
   const {
     isUpdateModalOpen,
     updateInfo,
     isDownloading,
     downloadProgress,
-    updateStatus,
-    checkForUpdates,
     downloadUpdate,
     skipUpdate,
     remindLater,
-    closeUpdateModal
+    closeUpdateModal,
   } = useAppUpdates();
 
-  // Only access store data after initialization
-  const selectedDay = useReportStore((state) => isInitialized ? state.selectedDay : initialDay);
-  const setSelectedDay = useReportStore((state) => state.setSelectedDay);
-  const { settings: displaySettings } = useDisplaySettings();
-
   useEffect(() => {
-    // Check for dark mode preference
-    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-
     const loadData = async () => {
       try {
         setIsLoading(true);
         setLoadError(null);
 
-        // Load settings first and wait for it to complete
         await loadSettings();
-
-        // Then load other data in parallel
         await Promise.all([
           loadServices(),
           loadPeople(),
           loadGoals(),
           loadWeekDates(),
           loadAvailableWeeks(),
-          loadAllData()
+          loadAllData(),
         ]);
-
-        // Set initial day after data is loaded
-        const jsDay = new Date().getDay();
-        const dayMap: (Day | null)[] = [null, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const today = jsDay === 0 ? 'Monday' : dayMap[jsDay] || 'Monday';
-        if (dayMap.includes(today)) {
-          setInitialDay(today);
-          setSelectedDay(today);
-        } else {
-          setInitialDay('Monday');
-          setSelectedDay('Monday');
-        }
 
         setIsInitialized(true);
       } catch (error) {
         console.error('Failed to load initial data:', error);
         setLoadError(error instanceof Error ? error.message : 'Failed to load data');
       } finally {
-        // Ensure loading screen shows for at least 1 second to prevent flickering
         setTimeout(() => setIsLoading(false), 1000);
       }
     };
 
     loadData();
 
-    // Add keyboard shortcut to toggle loading screen (Ctrl/Cmd + L)
     const handleKeyPress = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
         e.preventDefault();
-        setIsLoading(prev => !prev);
+        setIsLoading((prev) => !prev);
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [setSelectedDay]);
+  }, []);
 
   if (isLoading) {
     return <LoadingScreen version={VERSION} />;
@@ -126,7 +105,6 @@ function AppContent() {
     );
   }
 
-  // Only render the main content when the store is initialized
   if (!isInitialized) {
     return <LoadingScreen version={VERSION} />;
   }
@@ -136,17 +114,16 @@ function AppContent() {
       <TitleBar />
       <Layout selectedDay={selectedDay} onDayChange={setSelectedDay}>
         <div className="space-y-6">
-            <DaySummary day={selectedDay} />
+          <DaySummary day={selectedDay} />
           <div className="grid grid-cols-2 gap-6">
-                <AVSSection day={selectedDay} />
-                <InsuranceAgreementSection day={selectedDay} />
-                <PreklargjortTVSection day={selectedDay} />
-                <RepairTicketsSection day={selectedDay} />
-            </div>
+            <AVSSection day={selectedDay} />
+            <InsuranceAgreementSection day={selectedDay} />
+            <PreklargjortTVSection day={selectedDay} />
+            <RepairTicketsSection day={selectedDay} />
           </div>
-        </Layout>
-      
-      {/* Update Modal */}
+        </div>
+      </Layout>
+
       <UpdateModal
         isOpen={isUpdateModalOpen}
         onClose={closeUpdateModal}

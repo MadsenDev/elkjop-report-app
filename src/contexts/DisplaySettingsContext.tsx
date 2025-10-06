@@ -1,59 +1,33 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import useReportStore from '../store';
-
-interface DisplaySettings {
-  compactView: boolean;
-  showSections: {
-    avs: boolean;
-    insurance: boolean;
-    precalibrated: boolean;
-    repair: boolean;
-  };
-  defaultDay: 'current' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday';
-  numberFormat: {
-    currencyDecimals: number;
-    numberDecimals: number;
-  };
-}
+import { createContext, useContext, useMemo, useCallback, ReactNode } from 'react';
+import useReportStore, { DisplaySettings, getDefaultSettings } from '../store';
 
 interface DisplaySettingsContextType {
   settings: DisplaySettings;
-  updateSettings: (settings: Partial<DisplaySettings>) => void;
+  updateSettings: (settings: Partial<DisplaySettings>) => Promise<void>;
 }
 
 const DisplaySettingsContext = createContext<DisplaySettingsContextType | undefined>(undefined);
+const defaultDisplaySettings = getDefaultSettings().display;
 
 export function DisplaySettingsProvider({ children }: { children: ReactNode }) {
-  const storeSettings = useReportStore(state => state.settings);
-  const updateStoreSettings = useReportStore(state => state.updateSettings);
+  const displaySettings = useReportStore((state) => state.settings.display);
+  const updateStoreSettings = useReportStore((state) => state.updateSettings);
 
-  const [settings, setSettings] = useState<DisplaySettings>(() => {
-    return storeSettings?.display || {
-      compactView: false,
-      showSections: {
-        avs: true,
-        insurance: true,
-        precalibrated: true,
-        repair: true
-      },
-      defaultDay: 'current',
-      numberFormat: {
-        currencyDecimals: 2,
-        numberDecimals: 0
-      }
-    };
-  });
+  const updateSettings = useCallback(
+    (settings: Partial<DisplaySettings>) => updateStoreSettings({ display: settings }),
+    [updateStoreSettings],
+  );
 
-  const updateSettings = useCallback((newSettings: Partial<DisplaySettings>) => {
-    setSettings(prev => {
-      const updated = { ...prev, ...newSettings };
-      updateStoreSettings({ display: updated });
-      return updated;
-    });
-  }, [updateStoreSettings]);
+  const value = useMemo(
+    () => ({
+      settings: displaySettings ?? defaultDisplaySettings,
+      updateSettings,
+    }),
+    [displaySettings, updateSettings],
+  );
 
   return (
-    <DisplaySettingsContext.Provider value={{ settings, updateSettings }}>
+    <DisplaySettingsContext.Provider value={value}>
       {children}
     </DisplaySettingsContext.Provider>
   );
@@ -65,4 +39,4 @@ export function useDisplaySettings() {
     throw new Error('useDisplaySettings must be used within a DisplaySettingsProvider');
   }
   return context;
-} 
+}
